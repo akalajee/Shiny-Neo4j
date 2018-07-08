@@ -46,7 +46,8 @@ server <- function(input, output) {
     # Its decided to staticly maximum display 100 nodes
     # sliderInput(inputId = "maxnodes", label = "Maximum displayed nodes", min = 1, max = reactiveTotalNodeCount(), value = 5, step = 1)
     totalNodeCount = reactiveTotalNodeCount()
-    sliderMaximum = min(c(100, reactiveTotalNodeCount()))
+    #sliderMaximum = min(c(100, reactiveTotalNodeCount()))
+    sliderMaximum = totalNodeCount
     sliderInput(inputId = "maxnodes", label = "Maximum displayed nodes", min = 1, max = sliderMaximum, value = 5, step = 1)
     
   })
