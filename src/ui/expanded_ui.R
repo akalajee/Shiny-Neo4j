@@ -20,12 +20,6 @@ ui <- shiny::tabPanel(
     
       # Sidebar panel for inputs ----
       sidebarPanel(
-        
-        # Input: Text for providing a caption ----
-        #selectizeInput(inputId = "connectiontype",
-        #               label = "Choose a connection type:",
-        #               choices = relation_type
-        #),
         uiOutput("secondSelectionExpanded"),
         uiOutput("sliderExpanded"),
         uiOutput("countInputExpanded"),
@@ -34,8 +28,9 @@ ui <- shiny::tabPanel(
     
     # Main panel for displaying outputs ----
       mainPanel(
-        visNetworkOutput("networkExpanded", height = "600px")
+        visNetworkOutput("networkExpanded", height = "600px", width = "100%")
       )
-    )
+    ),
+    tabPanel('Display Sites', DT::dataTableOutput('ex1'))
   )
 )

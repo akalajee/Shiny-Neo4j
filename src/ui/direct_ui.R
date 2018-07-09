@@ -8,6 +8,7 @@ relation_type = cypher(graph, relation_type_query)
 ui <- shiny::tabPanel(
   
     title = "Directly connected",
+    
 
     # Define UI for dataset viewer app ----
    fluidPage(
@@ -34,7 +35,7 @@ ui <- shiny::tabPanel(
     
     # Main panel for displaying outputs ----
       mainPanel(
-        visNetworkOutput("network", height = "600px")
+        visNetworkOutput("network", height = "600px", width = "100%")
       )
     )
   )

@@ -62,7 +62,7 @@ source("common.R")
       reactiveTotalNodeCountExpanded(total_node_count)
       output$totalSiteCountExpanded = renderText({paste("Total Nodes Count: ", total_node_count)})
       
-      node_query = paste("
+      node_limited_query = paste("
                        MATCH p=shortestPath((src{name:'",nodeName,"'})-[r*]->(dst)) 
                        where src.name <> dst.name 
                        with distinct nodes(p) as t
@@ -74,6 +74,15 @@ source("common.R")
                        LIMIT ",maxnodes,"
                        ", sep="")
       
+      node_query = paste("
+                       MATCH p=shortestPath((src{name:'",nodeName,"'})-[r*]->(dst)) 
+                                 where src.name <> dst.name 
+                                 with distinct nodes(p) as t
+                                 unwind t as f
+                                 with distinct f as m
+                                 RETURN m.name as `Site name`, m.type as Type, LABELS(m)[0] as Group
+                                 ", sep="")
+      
       edge_query = paste("
                          MATCH p=shortestPath((src{name:'",nodeName,"'})-[r*]->(dst))
                          where src.name <> dst.name
@@ -83,10 +92,13 @@ source("common.R")
                          return from,  to,label, group
                          ", sep = "")
       
+      nodes_limited = cypher(graph, node_limited_query)
       nodes = cypher(graph, node_query)
       edges = cypher(graph, edge_query)
       
-      visNetwork(nodes, edges) %>% 
+      reactiveNodeListExpanded(nodes)
+      
+      visNetwork(nodes_limited, edges) %>% 
         visEdges(shadow = FALSE,
                  arrows =list(to = list(enabled = TRUE, scaleFactor = 1)),
                  color = list(color = "lightblue", highlight = "pink")) %>%
@@ -94,5 +106,9 @@ source("common.R")
     }
     
   })
+  
+  output$ex1 <- DT::renderDataTable(
+    DT::datatable(reactiveNodeListExpanded(), options = list(pageLength = 25))
+  )
   
 
