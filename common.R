@@ -5,3 +5,4 @@ graph = startGraph("http://localhost:7474/db/data/",
                    password = neo4j.password)
 
 reactiveTotalNodeCount = reactiveVal(0, "totalNodeCount")
+reactiveTotalNodeCountExpanded = reactiveVal(0, "totalNodeCountExpanded")
