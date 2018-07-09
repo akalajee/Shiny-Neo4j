@@ -70,7 +70,7 @@ source("common.R")
       reactiveTotalNodeCount(total_node_count)
       output$totalSiteCount = renderText({paste("Total Nodes Count: ", total_node_count)})
       
-      node_query = paste("MATCH p=({name:'",nodeName,"'})-[r:",connectiontype,"]->(n) 
+      node_limited_query = paste("MATCH p=({name:'",nodeName,"'})-[r:",connectiontype,"]->(n) 
                        with distinct nodes(p) as t
                        unwind t as f
                        with distinct f as m
@@ -80,16 +80,28 @@ source("common.R")
                        LIMIT ",maxnodes,"
                        ", sep="")
       
+      node_query = paste("MATCH p=({name:'",nodeName,"'})-[r:",connectiontype,"]->(n) 
+                       with distinct nodes(p) as t
+                                 unwind t as f
+                                 with distinct f as m
+                                 RETURN m.name AS id,
+                                 m.name AS label,
+                                 LABELS(m)[0] AS group
+                                 ", sep="")
+      
 
       edge_query = paste("MATCH (src{name:'",nodeName,"'})-[r:",connectiontype,"]->(dst)
                          with ({start: startNode(r).name, end: endNode(r).name, type: type(r)}) AS record, LABELS(dst)[0] AS group
                          return record.start as from, record.end AS to, record.type AS label, group
                          ", sep = "")
       
+      nodes_limited = cypher(graph, node_limited_query)
       nodes = cypher(graph, node_query)
       edges = cypher(graph, edge_query)
       
-      visNetwork(nodes, edges) %>% 
+      reactiveNodeList(nodes)
+      
+      visNetwork(nodes_limited, edges) %>% 
         visEdges(shadow = FALSE,
                  arrows =list(to = list(enabled = TRUE, scaleFactor = 1)),
                  color = list(color = "lightblue", highlight = "pink")) %>%
@@ -97,5 +109,9 @@ source("common.R")
     }
     
   })
+  
+  output$sitesList <- DT::renderDataTable(
+    DT::datatable(reactiveNodeList(), options = list(pageLength = 25))
+  )
   
 

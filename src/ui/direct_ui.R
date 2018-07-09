@@ -37,6 +37,7 @@ ui <- shiny::tabPanel(
       mainPanel(
         visNetworkOutput("network", height = "600px", width = "100%")
       )
-    )
+    ),
+    tabPanel('Display Sites', DT::dataTableOutput('sitesList'))
   )
 )

@@ -107,7 +107,7 @@ source("common.R")
     
   })
   
-  output$ex1 <- DT::renderDataTable(
+  output$sitesListExpanded <- DT::renderDataTable(
     DT::datatable(reactiveNodeListExpanded(), options = list(pageLength = 25))
   )
   
