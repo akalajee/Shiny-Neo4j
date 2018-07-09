@@ -62,37 +62,25 @@ source("common.R")
       reactiveTotalNodeCountExpanded(total_node_count)
       output$totalSiteCountExpanded = renderText({paste("Total Nodes Count: ", total_node_count)})
       
-      node_query = paste("MATCH p=shortestPath((src{name:'",nodeName,"'})-[*]->(dst))
-                       where src.name <> dst.name
-                       WITH DISTINCT (dst) AS m
-                       RETURN m.name AS id,
-                       m.name AS label,
-                       LABELS(m)[0] AS group
-                       LIMIT ",maxnodes," - 1
-                       UNION
-                       MATCH p=shortestPath((src{name:'",nodeName,"'})-[*]->(dst))
-                       where src.name <> dst.name
-                       WITH DISTINCT (src) AS m
-                       RETURN m.name AS id,
-                       m.name AS label,
-                       LABELS(m)[0] AS group
-                       LIMIT 1
-                       ", sep="")
-      
-      edge_query = paste("MATCH p=shortestPath((src{name:'",nodeName,"'})-[r*]->(dst)) 
+      node_query = paste("
+                       MATCH p=shortestPath((src{name:'",nodeName,"'})-[r*]->(dst)) 
                        where src.name <> dst.name 
-                       unwind rels(p) as rel
-                       RETURN src.name as from, 	
-                       dst.name AS to,
-                       collect(distinct type(rel)) AS label LIMIT ",maxnodes," + 10
+                       with distinct nodes(p) as t
+                       unwind t as f
+                       with distinct f as m
+                       RETURN m.name AS id,
+                       m.name AS label,
+                       LABELS(m)[0] AS group
+                       LIMIT ",maxnodes,"
                        ", sep="")
       
       edge_query = paste("
                          MATCH p=shortestPath((src{name:'",nodeName,"'})-[r*]->(dst))
                          where src.name <> dst.name
-                         with extract(x IN r | {start: startNode(x).name, end: endNode(x).name, type: type(x)}) AS record_list, LABELS(dst)[0] AS group
+                         with extract(x IN r | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x)}) AS record_list, LABELS(dst)[0] AS group
                          unwind record_list as record
-                         return record.start as from, record.end AS to, record.type AS label, group
+                         with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, group
+                         return from,  to,label, group
                          ", sep = "")
       
       nodes = cypher(graph, node_query)

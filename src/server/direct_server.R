@@ -70,25 +70,21 @@ source("common.R")
       reactiveTotalNodeCount(total_node_count)
       output$totalSiteCount = renderText({paste("Total Nodes Count: ", total_node_count)})
       
-      node_query = paste("MATCH ({name:'",nodeName,"'})-[r:",connectiontype,"]->(n) 
-                       WITH DISTINCT (n) AS m
+      node_query = paste("MATCH p=({name:'",nodeName,"'})-[r:",connectiontype,"]->(n) 
+                       with distinct nodes(p) as t
+                       unwind t as f
+                       with distinct f as m
                        RETURN m.name AS id,
                        m.name AS label,
                        LABELS(m)[0] AS group
-                       LIMIT ",maxnodes," - 1
-                       UNION
-                       MATCH (n{name:'",nodeName,"'})-[r:",connectiontype,"]->() 
-                       WITH DISTINCT (n) AS m
-                       RETURN m.name AS id,
-                       m.name AS label,
-                       LABELS(m)[0] AS group
-                       LIMIT 1
+                       LIMIT ",maxnodes,"
                        ", sep="")
       
-      edge_query = paste("MATCH (source{name:'",nodeName,"'})-[r:",connectiontype,"]->(dist) RETURN source.name as from, 	
-                       dist.name AS to,
-                       TYPE(r) AS label LIMIT ",maxnodes," + 10
-                       ", sep="")
+
+      edge_query = paste("MATCH (src{name:'",nodeName,"'})-[r:",connectiontype,"]->(dst)
+                         with ({start: startNode(r).name, end: endNode(r).name, type: type(r)}) AS record, LABELS(dst)[0] AS group
+                         return record.start as from, record.end AS to, record.type AS label, group
+                         ", sep = "")
       
       nodes = cypher(graph, node_query)
       edges = cypher(graph, edge_query)
