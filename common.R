@@ -7,5 +7,5 @@ graph = startGraph("http://localhost:7474/db/data/",
 reactiveTotalNodeCount = reactiveVal(0, "totalNodeCount")
 reactiveTotalNodeCountExpanded = reactiveVal(0, "totalNodeCountExpanded")
 
-reactiveNodeList = reactiveVal(0, "nodeList")
-reactiveNodeListExpanded = reactiveVal(0, "nodeListExpanded")
+reactiveNodeList = reactiveVal(list(), "nodeList")
+reactiveNodeListExpanded = reactiveVal(list(), "nodeListExpanded")

@@ -9,7 +9,13 @@ source("common.R")
     all_node_query = paste("MATCH (n)-[]->() 
                            WITH DISTINCT (n) AS m
                            order by m.name asc
-                           RETURN m.name AS sitename")
+                           RETURN m.name AS sitename
+                           UNION
+                           MATCH ()-[]->(n) 
+                           WITH DISTINCT (n) AS m
+                           order by m.name asc
+                           RETURN m.name AS sitename
+                           ")
     
     all_node_names_list = cypherToList(graph, all_node_query)
     node_matrix = matrix(unlist(all_node_names_list))
@@ -62,6 +68,15 @@ source("common.R")
       reactiveTotalNodeCountExpanded(total_node_count)
       output$totalSiteCountExpanded = renderText({paste("Total Nodes Count: ", total_node_count)})
       
+      siteClassification = ifelse(total_node_count >= 21, 'A',
+                              ifelse(total_node_count >= 11 && total_node_count <= 20, 'B',
+                                        ifelse(total_node_count >= 2 && total_node_count <= 19, 'C',
+                                                  'D'
+                                               )
+                                     )
+                              )
+      output$siteClassification = renderText({paste("Site Classification: ", siteClassification)})
+      
       node_limited_query = paste("
                        MATCH p=shortestPath((src{name:'",nodeName,"'})-[r*]->(dst)) 
                        where src.name <> dst.name 
@@ -72,6 +87,10 @@ source("common.R")
                        m.name AS label,
                        LABELS(m)[0] AS group
                        LIMIT ",maxnodes,"
+                       UNION MATCH (m{name:'",nodeName,"'})
+                       RETURN m.name AS id,
+                       m.name AS label,
+                       LABELS(m)[0] AS group
                        ", sep="")
       
       node_query = paste("
@@ -80,6 +99,8 @@ source("common.R")
                                  with distinct nodes(p) as t
                                  unwind t as f
                                  with distinct f as m
+                                 RETURN m.name as `Site name`, m.type as Type, LABELS(m)[0] as Group
+                                 UNION MATCH (m{name:'",nodeName,"'})
                                  RETURN m.name as `Site name`, m.type as Type, LABELS(m)[0] as Group
                                  ", sep="")
       
@@ -107,8 +128,12 @@ source("common.R")
     
   })
   
-  output$sitesListExpanded <- DT::renderDataTable(
-    DT::datatable(reactiveNodeListExpanded(), options = list(pageLength = 25))
-  )
+  output$sitesListExpanded <- DT::renderDataTable({
+    datalist = reactiveNodeListExpanded()
+    if(length(datalist) > 0)
+    {
+       DT::datatable(datalist, options = list(pageLength = 25))  
+    }
+  })
   
 

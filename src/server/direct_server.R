@@ -110,8 +110,12 @@ source("common.R")
     
   })
   
-  output$sitesList <- DT::renderDataTable(
-    DT::datatable(reactiveNodeList(), options = list(pageLength = 25))
-  )
+  output$sitesList <- DT::renderDataTable({
+    datalist = reactiveNodeList()
+    if(length(datalist) > 0)
+    {
+      DT::datatable(datalist, options = list(pageLength = 25))
+    }
+  })
   
 

@@ -1,5 +1,4 @@
 require(shiny)
-require(visNetwork)
 
 shiny::shinyUI(shiny::navbarPage(
   title = "Mobile Sites",
