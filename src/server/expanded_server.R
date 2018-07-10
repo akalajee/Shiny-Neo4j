@@ -123,7 +123,16 @@ source("common.R")
         visEdges(shadow = FALSE,
                  arrows =list(to = list(enabled = TRUE, scaleFactor = 1)),
                  color = list(color = "lightblue", highlight = "pink")) %>%
-        visLayout(randomSeed = 12) # to have always the same network
+        visLayout(randomSeed = 12) %>%
+        visOptions(nodesIdSelection = list(enabled = TRUE,
+                                           selected = nodeName,
+                                           style = 'width: 200px;'
+                                          ))
+        #visSelectNodes(nodeName)
+        #visEvents(afterDrawing = "function(){
+        #          this.body.data.nodes.get({});
+        #}" )
+      
     }
     
   })
@@ -136,4 +145,3 @@ source("common.R")
     }
   })
   
-
