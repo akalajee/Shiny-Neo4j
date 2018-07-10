@@ -28,24 +28,9 @@ source("common.R")
     
   })
   
-  #output$countInput <- renderUI({
-    
-      #textInput(inputId = "totalSiteCount",
-      #            label = "Total Nodes count",
-      #            value = reactiveTotalNodeCount()
-      #          )
-    
-      #textOutput(outputId = "totalSiteCount")
-    
-  #})
-  
   output$slider <- renderUI({
     
-    # Thought to reactively show max number of nodes to display, then based on experiment
-    # Its decided to staticly maximum display 100 nodes
-    # sliderInput(inputId = "maxnodes", label = "Maximum displayed nodes", min = 1, max = reactiveTotalNodeCount(), value = 5, step = 1)
     totalNodeCount = reactiveTotalNodeCount()
-    #sliderMaximum = min(c(100, reactiveTotalNodeCount()))
     sliderMaximum = totalNodeCount
     sliderInput(inputId = "maxnodes", label = "Maximum displayed nodes", min = 1, max = sliderMaximum, value = 5, step = 1)
     
@@ -118,4 +103,12 @@ source("common.R")
     }
   })
   
+  output$download <- downloadHandler(
+    filename = function() {
+      paste("direct-sites-",input$connectiontype,"-",input$sitename,"-", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      write.csv(reactiveNodeList(), file)
+    }
+  )
 

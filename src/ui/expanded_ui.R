@@ -32,6 +32,7 @@ ui <- shiny::tabPanel(
         visNetworkOutput("networkExpanded", height = "600px", width = "100%")
       )
     ),
+    downloadButton('downloadExpanded',"Download the data"),
     tabPanel('Display Sites', DT::dataTableOutput('sitesListExpanded'))
   )
 )

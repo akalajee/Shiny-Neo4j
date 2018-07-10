@@ -37,11 +37,7 @@ source("common.R")
   
   output$sliderExpanded <- renderUI({
     
-    # Thought to reactively show max number of nodes to display, then based on experiment
-    # Its decided to staticly maximum display 100 nodes
-    # sliderInput(inputId = "maxnodes", label = "Maximum displayed nodes", min = 1, max = reactiveTotalNodeCount(), value = 5, step = 1)
     totalNodeCountExpanded = reactiveTotalNodeCountExpanded()
-    #sliderMaximum = min(c(100, reactiveTotalNodeCount()))
     sliderMaximumExpanded = totalNodeCountExpanded
     sliderInput(inputId = "maxnodesExpanded", label = "Maximum displayed nodes", min = 1, max = sliderMaximumExpanded, value = 5, step = 1)
     
@@ -128,10 +124,6 @@ source("common.R")
                                            selected = nodeName,
                                            style = 'width: 200px;'
                                           ))
-        #visSelectNodes(nodeName)
-        #visEvents(afterDrawing = "function(){
-        #          this.body.data.nodes.get({});
-        #}" )
       
     }
     
@@ -141,7 +133,16 @@ source("common.R")
     datalist = reactiveNodeListExpanded()
     if(length(datalist) > 0)
     {
-       DT::datatable(datalist, options = list(pageLength = 25))  
+       DT::datatable(datalist, options = list(pageLength = 25))
     }
   })
+  
+  output$downloadExpanded <- downloadHandler(
+    filename = function() {
+      paste("expanded-sites-",input$sitenameExpanded,"-", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      write.csv(reactiveNodeListExpanded(), file)
+    }
+  )
   
