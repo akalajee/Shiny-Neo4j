@@ -39,7 +39,7 @@ source("common.R")
     
     totalNodeCountExpanded = reactiveTotalNodeCountExpanded()
     sliderMaximumExpanded = totalNodeCountExpanded
-    sliderInput(inputId = "maxnodesExpanded", label = "Maximum displayed nodes", min = 1, max = sliderMaximumExpanded, value = 5, step = 1)
+    sliderInput(inputId = "maxnodesExpanded", label = "Maximum displayed nodes", min = 1, max = sliderMaximumExpanded, value = sliderMaximumExpanded, step = 1)
     
   })
   
@@ -113,17 +113,25 @@ source("common.R")
       nodes = cypher(graph, node_query)
       edges = cypher(graph, edge_query)
       
-      reactiveNodeListExpanded(nodes)
+      edges = filterEdges(nodes_limited, edges)
       
+      reactiveNodeListExpanded(nodes)
+     
       visNetwork(nodes_limited, edges) %>% 
-        visEdges(shadow = FALSE,
+        visIgraphLayout() %>%
+        visPhysics(stabilization = FALSE) %>%
+        visEdges(smooth = FALSE,
+                 shadow = FALSE,
                  arrows =list(to = list(enabled = TRUE, scaleFactor = 1)),
                  color = list(color = "lightblue", highlight = "pink")) %>%
         visLayout(randomSeed = 12) %>%
         visOptions(nodesIdSelection = list(enabled = TRUE,
                                            selected = nodeName,
                                            style = 'width: 200px;'
-                                          ))
+        ))
+      
+      
+      
       
     }
     

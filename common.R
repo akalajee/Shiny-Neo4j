@@ -9,3 +9,23 @@ reactiveTotalNodeCountExpanded = reactiveVal(0, "totalNodeCountExpanded")
 
 reactiveNodeList = reactiveVal(list(), "nodeList")
 reactiveNodeListExpanded = reactiveVal(list(), "nodeListExpanded")
+
+filterEdges = function(nodes, edges) {
+  to_be_deleted = c()
+  i = 1
+  while (i<=nrow(edges)){
+    from_node = edges[i, ]["from"][,1]
+    to_node = edges[i, ]["to"][,1]
+    if(!(from_node %in% nodes[,1]) || !(to_node %in% nodes[,1]))
+    {
+      to_be_deleted = append(to_be_deleted, i)
+    }
+    i = i+1
+  }
+  
+  if(length(to_be_deleted) > 0)
+  {
+    edges = edges[-to_be_deleted,] 
+  }
+  return (edges)
+}
