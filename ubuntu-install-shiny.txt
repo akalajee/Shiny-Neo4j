@@ -1,0 +1,94 @@
+dependencies:
+=============
+
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/crayon.tar.gz', repos=NULL, type='source')\"" -- success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/digest.tar.gz', repos=NULL, type='source')\"" -- success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/Rcpp.tar.gz', repos=NULL, type='source')\"" -- success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/htmltools.tar.gz', repos=NULL, type='source')\"" -- success
+
+‘promises’, ‘later’, ‘BH’
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/BH.tar.gz', repos=NULL, type='source')\"" -- success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/rlang.tar.gz', repos=NULL, type='source')\"" -- success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/later.tar.gz', repos=NULL, type='source')\"" -- sucess
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/R6.tar.gz', repos=NULL, type='source')\"" -- sucess
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/magrittr.tar.gz', repos=NULL, type='source')\"" -- success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/promises.tar.gz', repos=NULL, type='source')\"" -- success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/httpuv.tar.gz', repos=NULL, type='source')\"" -- success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/jsonlite.tar.gz', repos=NULL, type='source')\"" -- success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/mime.tar.gz', repos=NULL, type='source')\"" -- success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/sourcetools.tar.gz', repos=NULL, type='source')\"" -- success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/xtable.tar.gz', repos=NULL, type='source')\"" -- success
+
+
+shiny:
+======
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny_1.1.0.tar.gz', repos=NULL, type='source')\"" -- success
+
+
+project-dep:
+===========
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/rmarkdown.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/visNetwork.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/DT.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/RNeo4j.tar.gz', repos=NULL, type='source')\"" --success
+
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/pkgconfig.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/Matrix.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/igraph.tar.gz', repos=NULL, type='source')\""
+
+RNeo4j-dep:
+===========
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/curl.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/openssl.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/httr.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/rstudioapi.tar.gz', repos=NULL, type='source')\"" --success
+
+DT-dep:
+=======
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/htmlwidgets.tar.gz', repos=NULL, type='source')\""  --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/lazyeval.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/ggplot2.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/crosstalk.tar.gz', repos=NULL, type='source')\"" --success
+
+ggplot2-dep:
+============
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/gtable.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/plyr.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/reshape2.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/viridisLite.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/withr.tar.gz', repos=NULL, type='source')\"" --success
+
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/scales.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/tibble.tar.gz', repos=NULL, type='source')\"" --success
+
+
+scales-dep:
+===========
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/RColorBrewer.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/dichromat.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/colorspace.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/munsell.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/labeling.tar.gz', repos=NULL, type='source')\"" --success
+
+tibble-dep:
+===========
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/assertthat.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/utf8.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/cli.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/pillar.tar.gz', repos=NULL, type='source')\"" --success
+
+rmarkdown-dep:
+==============
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/markdown.tar.gz', repos=NULL, type='source')\"" -- success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/highr.tar.gz', repos=NULL, type='source')\"" -- success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/yaml.tar.gz', repos=NULL, type='source')\"" -- success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/glue.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/stringi.tar.gz', configure.vars='ICUDT_DIR=/root/R-packages/shiny-dep', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/stringr.tar.gz', repos=NULL, type='source')\""  --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/evaluate.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/base64enc.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/knitr.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/backports.tar.gz', repos=NULL, type='source')\"" -- success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/rprojroot.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/xfun.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/tinytex.tar.gz', repos=NULL, type='source')\"" --success
