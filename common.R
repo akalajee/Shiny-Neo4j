@@ -11,6 +11,10 @@ reactiveNodeList = reactiveVal(list(), "nodeList")
 reactiveNodeListExpanded = reactiveVal(list(), "nodeListExpanded")
 
 filterEdges = function(nodes, edges) {
+  if(length(edges) < 1)
+  {
+    return (edges)
+  }
   to_be_deleted = c()
   i = 1
   while (i<=nrow(edges)){

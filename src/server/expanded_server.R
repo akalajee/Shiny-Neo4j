@@ -114,24 +114,43 @@ source("common.R")
       edges = cypher(graph, edge_query)
       
       edges = filterEdges(nodes_limited, edges)
-      
       reactiveNodeListExpanded(nodes)
-     
-      visNetwork(nodes_limited, edges) %>% 
-        visIgraphLayout() %>%
-        visPhysics(stabilization = FALSE) %>%
-        visEdges(smooth = FALSE,
-                 shadow = FALSE,
-                 arrows =list(to = list(enabled = TRUE, scaleFactor = 1)),
-                 color = list(color = "lightblue", highlight = "pink")) %>%
-        visLayout(randomSeed = 12) %>%
-        visOptions(nodesIdSelection = list(enabled = TRUE,
-                                           selected = nodeName,
-                                           style = 'width: 200px;'
-        ))
       
-      
-      
+      if(length(edges) < 1)
+      {
+        edge_query = paste("
+                         MATCH (src{name:'",nodeName,"'})
+                         return
+                         src.name as from, NULL as to, src.type as label, LABELS(src)[0] as group", sep = "")
+        edges = cypher(graph, edge_query)
+        visNetwork(nodes_limited, edges) %>% 
+          visPhysics(stabilization = FALSE) %>%
+          visEdges(smooth = FALSE,
+                   shadow = FALSE,
+                   arrows =list(to = list(enabled = TRUE, scaleFactor = 1)),
+                   color = list(color = "lightblue", highlight = "pink")) %>%
+          visLayout(randomSeed = 12) %>%
+          visOptions(nodesIdSelection = list(enabled = TRUE,
+                                             selected = nodeName,
+                                             style = 'width: 200px;'
+          ))
+      }
+      else
+      {
+        visNetwork(nodes_limited, edges) %>% 
+          visIgraphLayout() %>%
+          visPhysics(stabilization = FALSE) %>%
+          visEdges(smooth = FALSE,
+                   shadow = FALSE,
+                   arrows =list(to = list(enabled = TRUE, scaleFactor = 1)),
+                   color = list(color = "lightblue", highlight = "pink")) %>%
+          visLayout(randomSeed = 12) %>%
+          visOptions(nodesIdSelection = list(enabled = TRUE,
+                                             selected = nodeName,
+                                             style = 'width: 200px;'
+          ))
+      }
+
       
     }
     
