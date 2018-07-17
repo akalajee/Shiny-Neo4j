@@ -3,7 +3,9 @@ library(visNetwork)
 source("common.R")
 
 relation_type_query = "MATCH (n)-[r]-(m) RETURN distinct type(r) AS `Connection Type`"
-relation_type = cypher(graph, relation_type_query)
+relation_type_list = cypherToList(graph, relation_type_query)
+relation_label = "Connection Type";
+all_relation_names = selectizeListInput(relation_type_list, relation_label)
 
 ui <- shiny::tabPanel(
   
@@ -25,7 +27,7 @@ ui <- shiny::tabPanel(
         # Input: Text for providing a caption ----
         selectizeInput(inputId = "connectiontype",
                        label = "Choose a connection type:",
-                       choices = relation_type
+                       choices = all_relation_names
         ),
         uiOutput("secondSelection"),
         uiOutput("slider"),

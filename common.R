@@ -33,3 +33,18 @@ filterEdges = function(nodes, edges) {
   }
   return (edges)
 }
+
+selectizeListInput = function(items_list, items_label) {
+  items_matrix = matrix(unlist(items_list))
+  
+  if(length(items_matrix) > 1)
+  {
+    all_items_names = list()
+    all_items_names[[items_label]] = items_matrix
+  }
+  else
+  {
+    all_items_names = list(items_matrix)
+  }
+  return (all_items_names)
+}

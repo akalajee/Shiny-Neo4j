@@ -6,12 +6,12 @@ source("common.R")
   output$secondSelectionExpanded <- renderUI({
     
     
-    all_node_query = paste("MATCH (n)-[]->() 
+    all_node_query = paste("MATCH (n)<-[]-() 
                            WITH DISTINCT (n) AS m
                            order by m.name asc
                            RETURN m.name AS sitename
                            UNION
-                           MATCH ()-[]->(n) 
+                           MATCH ()<-[]-(n) 
                            WITH DISTINCT (n) AS m
                            order by m.name asc
                            RETURN m.name AS sitename
@@ -53,7 +53,7 @@ source("common.R")
     {
       
       total_node_query = paste("MATCH p=shortestPath(
-                                  (src{name:'",nodeName,"'})-[*]->(dst)
+                                  (src{name:'",nodeName,"'})<-[*]-(dst)
                                ) where src.name <> dst.name
                                WITH DISTINCT (dst.name) AS m
                                RETURN count(m)+1", sep="")
@@ -74,7 +74,7 @@ source("common.R")
       output$siteClassification = renderText({paste("Site Classification: ", siteClassification)})
       
       node_limited_query = paste("
-                       MATCH p=shortestPath((src{name:'",nodeName,"'})-[r*]->(dst)) 
+                       MATCH p=shortestPath((src{name:'",nodeName,"'})<-[r*]-(dst)) 
                        where src.name <> dst.name 
                        with distinct nodes(p) as t
                        unwind t as f
@@ -90,18 +90,18 @@ source("common.R")
                        ", sep="")
       
       node_query = paste("
-                       MATCH p=shortestPath((src{name:'",nodeName,"'})-[r*]->(dst)) 
+                       MATCH p=shortestPath((src{name:'",nodeName,"'})<-[r*]-(dst)) 
                                  where src.name <> dst.name 
                                  with distinct nodes(p) as t
                                  unwind t as f
                                  with distinct f as m
-                                 RETURN m.name as `Site name`, m.type as Type, LABELS(m)[0] as Group
+                                 RETURN m.name as `Site name`, m.technology as Technology, LABELS(m)[0] as Group
                                  UNION MATCH (m{name:'",nodeName,"'})
-                                 RETURN m.name as `Site name`, m.type as Type, LABELS(m)[0] as Group
+                                 RETURN m.name as `Site name`, m.technology as Technology, LABELS(m)[0] as Group
                                  ", sep="")
       
       edge_query = paste("
-                         MATCH p=shortestPath((src{name:'",nodeName,"'})-[r*]->(dst))
+                         MATCH p=shortestPath((src{name:'",nodeName,"'})<-[r*]-(dst))
                          where src.name <> dst.name
                          with extract(x IN r | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x)}) AS record_list, LABELS(dst)[0] AS group
                          unwind record_list as record
