@@ -24,7 +24,8 @@ ui <- shiny::tabPanel(
         uiOutput("sliderExpanded"),
         uiOutput("countInputExpanded"),
         textOutput(outputId = "totalSiteCountExpanded"),
-        textOutput(outputId = "siteClassification")
+        textOutput(outputId = "siteClassification"),
+        width = 3
       ),
     
     # Main panel for displaying outputs ----
