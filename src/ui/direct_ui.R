@@ -2,7 +2,7 @@ library(shiny)
 library(visNetwork)
 source("common.R")
 
-relation_type_query = "MATCH (n)-[r]-(m) RETURN distinct type(r) AS `Connection Type`"
+relation_type_query = "MATCH (n)-[r]-(m) with \"All\" + collect(type(r)) as tt unwind tt as t  RETURN distinct t AS `Connection Type`"
 relation_type_list = cypherToList(graph, relation_type_query)
 relation_label = "Connection Type";
 all_relation_names = selectizeListInput(relation_type_list, relation_label)

@@ -7,12 +7,11 @@ source("common.R")
     
     
     all_node_query = paste("MATCH (n)<-[]-() 
-                           WITH DISTINCT (n) AS m
-                           order by m.name asc
-                           RETURN m.name AS sitename
-                           UNION
-                           MATCH ()<-[]-(n) 
-                           WITH DISTINCT (n) AS m
+                           WITH collect(n) AS nn
+                           MATCH ()<-[]-(n)  
+                           WITH collect(n) + nn AS j
+                           unwind j as f
+                           with distinct f as m
                            order by m.name asc
                            RETURN m.name AS sitename
                            ")
@@ -54,9 +53,17 @@ source("common.R")
       
       total_node_query = paste("MATCH p=shortestPath(
                                   (src{name:'",nodeName,"'})<-[*]-(dst)
-                               ) where src.name <> dst.name
-                               WITH DISTINCT (dst.name) AS m
-                               RETURN count(m)+1", sep="")
+                               ) where id(src) <> id(dst)
+                               WITH collect(DISTINCT id(dst)) AS n
+                               
+                               MATCH p=shortestPath(
+                               (src)<-[*]-(dst{name:'",nodeName,"'})
+                               ) where id(src) <> id(dst)
+                               WITH collect(DISTINCT id(src)) + n as f
+                               unwind f as j
+                               with distinct(j) as m
+                               RETURN count(m)+1
+                               ", sep="")
       
       total_node_count = cypher(graph, total_node_query)[1,1]
       
@@ -74,27 +81,41 @@ source("common.R")
       output$siteClassification = renderText({paste("Site Classification: ", siteClassification)})
       
       node_limited_query = paste("
-                       MATCH p=shortestPath((src{name:'",nodeName,"'})<-[r*]-(dst)) 
-                       where src.name <> dst.name 
-                       with distinct nodes(p) as t
-                       unwind t as f
-                       with distinct f as m
-                       RETURN m.name AS id,
-                       m.name AS label,
-                       LABELS(m)[0] AS group
-                       LIMIT ",maxnodes,"
-                       UNION MATCH (m{name:'",nodeName,"'})
-                       RETURN m.name AS id,
-                       m.name AS label,
-                       LABELS(m)[0] AS group
+                                 MATCH p=shortestPath(
+                            	   (src{name:'",nodeName,"'})<-[*]-(dst)
+                                  ) where id(src) <> id(dst)
+                                 WITH collect (distinct nodes(p)) AS n	
+                                 
+                                 MATCH p=shortestPath(
+                                 (src)<-[*]-(dst{name:'",nodeName,"'})
+                                 ) where id(src) <> id(dst)
+                                 WITH collect(distinct nodes(p)) + n as f
+                                 unwind f as j
+                                 unwind j as k
+                                 with distinct(k) as m
+                                 RETURN m.name AS id,
+                                 m.name AS label,
+                                 LABELS(m)[0] AS group
+                                 LIMIT ",maxnodes,"
+                                 UNION MATCH (m{name:'",nodeName,"'})
+                                 RETURN m.name AS id,
+                                 m.name AS label,
+                                 LABELS(m)[0] AS group
                        ", sep="")
       
       node_query = paste("
-                       MATCH p=shortestPath((src{name:'",nodeName,"'})<-[r*]-(dst)) 
-                                 where src.name <> dst.name 
-                                 with distinct nodes(p) as t
-                                 unwind t as f
-                                 with distinct f as m
+                                 MATCH p=shortestPath(
+                                 (src{name:'",nodeName,"'})<-[*]-(dst)
+                                  ) where id(src) <> id(dst)
+                                 WITH collect (distinct nodes(p)) AS n	
+                                 
+                                 MATCH p=shortestPath(
+                                 (src)<-[*]-(dst{name:'",nodeName,"'})
+                                 ) where id(src) <> id(dst)
+                                 WITH collect(distinct nodes(p)) + n as f
+                                 unwind f as j
+                                 unwind j as k
+                                 with distinct(k) as m
                                  RETURN m.name as `Site name`, m.technology as Technology, LABELS(m)[0] as Group
                                  UNION MATCH (m{name:'",nodeName,"'})
                                  RETURN m.name as `Site name`, m.technology as Technology, LABELS(m)[0] as Group
@@ -103,9 +124,14 @@ source("common.R")
       edge_query = paste("
                          MATCH p=shortestPath((src{name:'",nodeName,"'})<-[r*]-(dst))
                          where src.name <> dst.name
-                         with extract(x IN r | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x)}) AS record_list, LABELS(dst)[0] AS group
+                         with collect(extract(x IN r | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: LABELS(dst)[0] })) AS rl						 
+                         
+                         MATCH p=shortestPath((src)<-[r*]-(dst{name:'",nodeName,"'}))
+                         where src.name <> dst.name
+                         with collect(extract(x IN r | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: LABELS(dst)[0] })) + rl AS final_rl						 
+                         unwind final_rl as record_list
                          unwind record_list as record
-                         with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, group
+                         with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                          return from,  to,label, group
                          ", sep = "")
       
