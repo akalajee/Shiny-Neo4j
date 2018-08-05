@@ -6,14 +6,9 @@ source("common.R")
   output$secondSelectionExpanded <- renderUI({
     
     
-    all_node_query = paste("MATCH (n)<-[]-() 
-                           WITH collect(n) AS nn
-                           MATCH ()<-[]-(n)  
-                           WITH collect(n) + nn AS j
-                           unwind j as f
-                           with distinct f as m
-                           order by m.name asc
-                           RETURN m.name AS sitename
+    all_node_query = paste("MATCH (n)
+                           RETURN n.name AS sitename
+                           order by n.name asc
                            ")
     
     all_node_names_list = cypherToList(graph, all_node_query)
@@ -52,17 +47,10 @@ source("common.R")
     {
       
       total_node_query = paste("MATCH p=shortestPath(
-                                  (src{name:'",nodeName,"'})<-[*]-(dst)
+                                  (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
                                ) where id(src) <> id(dst)
-                               WITH collect(DISTINCT id(dst)) AS n
-                               
-                               MATCH p=shortestPath(
-                               (src)<-[*]-(dst{name:'",nodeName,"'})
-                               ) where id(src) <> id(dst)
-                               WITH collect(DISTINCT id(src)) + n as f
-                               unwind f as j
-                               with distinct(j) as m
-                               RETURN count(m)+1
+                               WITH DISTINCT id(dst) AS n
+                               RETURN count(n)+1
                                ", sep="")
       
       total_node_count = cypher(graph, total_node_query)[1,1]
@@ -82,16 +70,9 @@ source("common.R")
       
       node_limited_query = paste("
                                  MATCH p=shortestPath(
-                            	   (src{name:'",nodeName,"'})<-[*]-(dst)
+                            	   (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
                                   ) where id(src) <> id(dst)
-                                 WITH collect (distinct nodes(p)) AS n	
-                                 
-                                 MATCH p=shortestPath(
-                                 (src)<-[*]-(dst{name:'",nodeName,"'})
-                                 ) where id(src) <> id(dst)
-                                 WITH collect(distinct nodes(p)) + n as f
-                                 unwind f as j
-                                 unwind j as k
+                                 unwind nodes(p) AS k
                                  with distinct(k) as m
                                  RETURN m.name AS id,
                                  m.name AS label,
@@ -105,32 +86,20 @@ source("common.R")
       
       node_query = paste("
                                  MATCH p=shortestPath(
-                                 (src{name:'",nodeName,"'})<-[*]-(dst)
+                            	   (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
                                   ) where id(src) <> id(dst)
-                                 WITH collect (distinct nodes(p)) AS n	
-                                 
-                                 MATCH p=shortestPath(
-                                 (src)<-[*]-(dst{name:'",nodeName,"'})
-                                 ) where id(src) <> id(dst)
-                                 WITH collect(distinct nodes(p)) + n as f
-                                 unwind f as j
-                                 unwind j as k
+                                 unwind nodes(p) AS k
                                  with distinct(k) as m
                                  RETURN m.name as `Site name`, m.technology as Technology, LABELS(m)[0] as Group
                                  UNION MATCH (m{name:'",nodeName,"'})
                                  RETURN m.name as `Site name`, m.technology as Technology, LABELS(m)[0] as Group
-                                 ", sep="")
+                                ", sep="")
       
       edge_query = paste("
-                         MATCH p=shortestPath((src{name:'",nodeName,"'})<-[r*]-(dst))
-                         where src.name <> dst.name
-                         with collect(extract(x IN r | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: LABELS(dst)[0] })) AS rl						 
-                         
-                         MATCH p=shortestPath((src)<-[r*]-(dst{name:'",nodeName,"'}))
-                         where src.name <> dst.name
-                         with collect(extract(x IN r | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: LABELS(dst)[0] })) + rl AS final_rl						 
-                         unwind final_rl as record_list
-                         unwind record_list as record
+                         MATCH p=shortestPath((src{name:'",nodeName,"'})-[:Link*..30]->(dst))
+                         where id(src) <> id(dst)
+                         with extract(x IN relationships(p) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: LABELS(dst)[0] }) AS rl
+                         unwind rl as record
                          with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                          return from,  to,label, group
                          ", sep = "")
@@ -163,7 +132,7 @@ source("common.R")
       }
       else
       {
-        visNetwork(nodes_limited, edges) %>% 
+        visNetwork(nodes_limited, edges, height = "100%", width = "100%") %>% 
           visIgraphLayout() %>%
           visPhysics(stabilization = FALSE) %>%
           visEdges(smooth = FALSE,
