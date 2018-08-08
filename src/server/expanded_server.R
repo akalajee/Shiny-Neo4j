@@ -92,12 +92,12 @@ source("common.R")
                                  with distinct(k) as m
                                  RETURN m.name AS id,
                                  m.name AS label,
-                                 LABELS(m)[0] AS group
+                                 replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group
                                  LIMIT ",maxnodes,"
                                  UNION MATCH (m{name:'",nodeName,"'})
                                  RETURN m.name AS id,
                                  m.name AS label,
-                                 LABELS(m)[0] AS group
+                                 replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group
                        ", sep="")
       
       node_query = paste("
@@ -106,15 +106,15 @@ source("common.R")
                                   ) where id(src) <> id(dst)
                                  unwind nodes(p) AS k
                                  with distinct(k) as m
-                                 RETURN m.name as `Site name`, LABELS(m)[0] as Group, m.type2 as type2, m.type3 as type3
+                                 RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS Group
                                  UNION MATCH (m{name:'",nodeName,"'})
-                                 RETURN m.name as `Site name`, LABELS(m)[0] as Group, m.type2 as type2, m.type3 as type3
+                                 RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS Group
                                 ", sep="")
       
       edge_query = paste("
                          MATCH p=shortestPath((src{name:'",nodeName,"'})-[:Link*..30]->(dst))
                          where id(src) <> id(dst)
-                         with extract(x IN relationships(p) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: LABELS(dst)[0] }) AS rl
+                         with extract(x IN relationships(p) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: replace(LABELS(dst)[0] + ' - ' +  coalesce(dst.type2,'$') + ' - ' + coalesce(dst.type3,'$'), ' - $', '') }) AS rl
                          unwind rl as record
                          with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                          return from,  to,label, group
@@ -130,12 +130,12 @@ source("common.R")
                                    with distinct(k) as m
                                    RETURN m.name AS id,
                                    m.name AS label,
-                                   LABELS(m)[0] AS group
+                                   replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group
                                    LIMIT ",maxnodes,"
                                    UNION MATCH (m{name:'",nodeName,"'})
                                    RETURN m.name AS id,
                                    m.name AS label,
-                                   LABELS(m)[0] AS group
+                                   replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group
                                    ", sep="")
         
         node_query = paste("
@@ -144,15 +144,15 @@ source("common.R")
                            ) where id(src) <> id(dst) and src.bsc = true
                            unwind nodes(p) AS k
                            with distinct(k) as m
-                           RETURN m.name as `Site name`, LABELS(m)[0] as Group, m.type2 as type2, m.type3 as type3
+                           RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') as group
                            UNION MATCH (m{name:'",nodeName,"'})
-                           RETURN m.name as `Site name`, LABELS(m)[0] as Group, m.type2 as type2, m.type3 as type3
+                           RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') as group
                            ", sep="")
         
         edge_query = paste("
                            MATCH p=shortestPath((dst{name:'",nodeName,"'})<-[:Link*..30]-(src))
                            where id(src) <> id(dst) and src.bsc = true
-                           with extract(x IN relationships(p) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: LABELS(dst)[0] }) AS rl
+                           with extract(x IN relationships(p) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: replace(LABELS(dst)[0] + ' - ' +  coalesce(dst.type2,'$') + ' - ' + coalesce(dst.type3,'$'), ' - $', '') }) AS rl
                            unwind rl as record
                            with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                            return from,  to,label, group
@@ -171,7 +171,7 @@ source("common.R")
         edge_query = paste("
                          MATCH (src{name:'",nodeName,"'})
                          return
-                         src.name as from, NULL as to, src.type as label, LABELS(src)[0] as group", sep = "")
+                         src.name as from, NULL as to, src.type as label, replace(LABELS(src)[0] + ' - ' +  coalesce(src.type2,'$') + ' - ' + coalesce(src.type3,'$'), ' - $', '') as group", sep = "")
         edges = cypher(graph, edge_query)
         visNetwork(nodes_limited, edges) %>% 
           visPhysics(stabilization = FALSE) %>%
