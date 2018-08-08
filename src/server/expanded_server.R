@@ -66,7 +66,7 @@ source("common.R")
       }
       
       total_node_count = cypher(graph, total_node_query)[1,1]
-      
+      total_node_count = ifelse(total_node_count >= 1, total_node_count, 1)
       
       reactiveTotalNodeCountExpanded(total_node_count)
       output$totalSiteCountExpanded = renderText({paste("Total Nodes Count: ", total_node_count)})
