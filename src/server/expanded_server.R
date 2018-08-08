@@ -183,7 +183,16 @@ source("common.R")
           visOptions(nodesIdSelection = list(enabled = TRUE,
                                              selected = nodeName,
                                              style = 'width: 200px;'
-          ))
+          )) %>%
+          visEvents(
+            doubleClick = "function(event) {
+            console.info(event)
+            clicked_node = event.nodes[0]
+            var selectElement = $('#sitenameExpanded').eq(0);
+            var selectize = selectElement.data('selectize');
+            selectize.setValue(clicked_node)
+            ;}"
+          )
       }
       else
       {
@@ -198,7 +207,16 @@ source("common.R")
           visOptions(nodesIdSelection = list(enabled = TRUE,
                                              selected = nodeName,
                                              style = 'width: 200px;'
-          ))
+          )) %>%
+          visEvents(
+            doubleClick = "function(event) {
+            console.info(event)
+            clicked_node = event.nodes[0]
+            var selectElement = $('#sitenameExpanded').eq(0);
+            var selectize = selectElement.data('selectize');
+            selectize.setValue(clicked_node)
+            ;}"
+          )
       }
 
       
