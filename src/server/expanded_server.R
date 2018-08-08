@@ -42,16 +42,28 @@ source("common.R")
     
     nodeName = input$sitenameExpanded
     maxnodes = input$maxnodesExpanded
+    showSource = input$showSourceExpanded
     
     if(!is.null(nodeName) && nodeName != "")
     {
       
       total_node_query = paste("MATCH p=shortestPath(
                                   (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
-                               ) where id(src) <> id(dst)
-                               WITH DISTINCT id(dst) AS n
-                               RETURN count(n)+1
+                                ) where id(src) <> id(dst)
+                               UNWIND (nodes(p)) as my_nodes
+                               WITH DISTINCT(id(my_nodes)) as n
+                               RETURN count(n)
                                ", sep="")
+      if(showSource)
+      {
+        total_node_query = paste("MATCH p=shortestPath(
+                                  (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
+                                  ) where id(src) <> id(dst) and src.bsc = true
+                                 UNWIND (nodes(p)) as my_nodes
+                                 WITH DISTINCT(id(my_nodes)) as n
+                                 RETURN count(n)
+                                 ", sep="")
+      }
       
       total_node_count = cypher(graph, total_node_query)[1,1]
       
@@ -67,6 +79,10 @@ source("common.R")
                                      )
                               )
       output$siteClassification = renderText({paste("Site Classification: ", siteClassification)})
+      if(showSource)
+      {
+        output$siteClassification = renderText({""})
+      }
       
       node_limited_query = paste("
                                  MATCH p=shortestPath(
@@ -90,9 +106,9 @@ source("common.R")
                                   ) where id(src) <> id(dst)
                                  unwind nodes(p) AS k
                                  with distinct(k) as m
-                                 RETURN m.name as `Site name`, m.technology as Technology, LABELS(m)[0] as Group
+                                 RETURN m.name as `Site name`, LABELS(m)[0] as Group, m.type2 as type2, m.type3 as type3
                                  UNION MATCH (m{name:'",nodeName,"'})
-                                 RETURN m.name as `Site name`, m.technology as Technology, LABELS(m)[0] as Group
+                                 RETURN m.name as `Site name`, LABELS(m)[0] as Group, m.type2 as type2, m.type3 as type3
                                 ", sep="")
       
       edge_query = paste("
@@ -103,6 +119,45 @@ source("common.R")
                          with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                          return from,  to,label, group
                          ", sep = "")
+      
+      if(showSource)
+      {
+        node_limited_query = paste("
+                                 MATCH p=shortestPath(
+                                   (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
+                                    ) where id(src) <> id(dst) and src.bsc = true
+                                   unwind nodes(p) AS k
+                                   with distinct(k) as m
+                                   RETURN m.name AS id,
+                                   m.name AS label,
+                                   LABELS(m)[0] AS group
+                                   LIMIT ",maxnodes,"
+                                   UNION MATCH (m{name:'",nodeName,"'})
+                                   RETURN m.name AS id,
+                                   m.name AS label,
+                                   LABELS(m)[0] AS group
+                                   ", sep="")
+        
+        node_query = paste("
+                           MATCH p=shortestPath(
+                           (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
+                           ) where id(src) <> id(dst) and src.bsc = true
+                           unwind nodes(p) AS k
+                           with distinct(k) as m
+                           RETURN m.name as `Site name`, LABELS(m)[0] as Group, m.type2 as type2, m.type3 as type3
+                           UNION MATCH (m{name:'",nodeName,"'})
+                           RETURN m.name as `Site name`, LABELS(m)[0] as Group, m.type2 as type2, m.type3 as type3
+                           ", sep="")
+        
+        edge_query = paste("
+                           MATCH p=shortestPath((dst{name:'",nodeName,"'})<-[:Link*..30]-(src))
+                           where id(src) <> id(dst) and src.bsc = true
+                           with extract(x IN relationships(p) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: LABELS(dst)[0] }) AS rl
+                           unwind rl as record
+                           with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
+                           return from,  to,label, group
+                           ", sep = "")
+      }
       
       nodes_limited = cypher(graph, node_limited_query)
       nodes = cypher(graph, node_query)
@@ -161,7 +216,12 @@ source("common.R")
   
   output$downloadExpanded <- downloadHandler(
     filename = function() {
-      paste("expanded-sites-",input$sitenameExpanded,"-", Sys.Date(), ".csv", sep="")
+      showSourceString = ""
+      if(input$showSourceExpanded)
+      {
+        showSourceString = "-source"
+      }
+      paste("expanded-sites-",input$sitenameExpanded, showSourceString,"-", Sys.Date(), ".csv", sep="")
     },
     content = function(file) {
       write.csv(reactiveNodeListExpanded(), file)

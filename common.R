@@ -1,6 +1,6 @@
 library(RNeo4j)
 source("config.R")
-graph = startGraph("http://localhost:7474/db/data/",
+graph = startGraph("http://192.168.1.1:7474/db/data/",
                    username = neo4j.username,
                    password = neo4j.password)
 
