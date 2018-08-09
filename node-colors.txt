@@ -1,0 +1,21 @@
+blue-circle         r       g       b
+inside              #9EC2F7 
+outsie              #3E7EE2
+highligh            #D5E5FD	
+
+yellow-circle       
+inside              #FFFD54
+outside             #F4AE3D
+highlight           #FFFEAE
+
+red-circle
+inside              #EC8584
+outside             #E74237 #E7392F
+highlight           #F4B2B3
+                    
+green-circle
+inside              #58AB3A
+outside             #357533
+highligh            #9CF08F
+
+2. test query to show all A-site maybe?
