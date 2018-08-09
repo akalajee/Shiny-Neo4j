@@ -1,8 +1,9 @@
 library(RNeo4j)
 source("config.R")
-graph = startGraph("http://192.168.1.1:7474/db/data/",
+graph = startGraph(url = neo4j.url,
                    username = neo4j.username,
-                   password = neo4j.password)
+                   password = neo4j.password
+                   )
 
 reactiveTotalNodeCount = reactiveVal(0, "totalNodeCount")
 reactiveTotalNodeCountExpanded = reactiveVal(0, "totalNodeCountExpanded")
