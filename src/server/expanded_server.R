@@ -162,63 +162,53 @@ source("common.R")
       nodes_limited = cypher(graph, node_limited_query)
       nodes = cypher(graph, node_query)
       edges = cypher(graph, edge_query)
-      
+  
       edges = filterEdges(nodes_limited, edges)
       reactiveNodeListExpanded(nodes)
       
+      doubleClickJs = "function(event) {
+      clicked_node = event.nodes[0]
+      if(!!clicked_node){
+          var selectElement = $('#sitenameExpanded').eq(0);
+          var selectize = selectElement.data('selectize');
+          selectize.setValue(clicked_node)
+      }
+      ;}"
+      
+      no_edges = FALSE
       if(length(edges) < 1)
       {
+        no_edges = TRUE 
         edge_query = paste("
                          MATCH (src{name:'",nodeName,"'})
                          return
                          src.name as from, NULL as to, src.type as label, replace(LABELS(src)[0] + ' - ' +  coalesce(src.type2,'$') + ' - ' + coalesce(src.type3,'$'), ' - $', '') as group", sep = "")
         edges = cypher(graph, edge_query)
-        visNetwork(nodes_limited, edges) %>% 
-          visPhysics(stabilization = FALSE) %>%
-          visEdges(smooth = FALSE,
-                   shadow = FALSE,
-                   arrows =list(to = list(enabled = TRUE, scaleFactor = 1)),
-                   color = list(color = "lightblue", highlight = "pink")) %>%
-          visLayout(randomSeed = 12) %>%
-          visOptions(nodesIdSelection = list(enabled = TRUE,
-                                             selected = nodeName,
-                                             style = 'width: 200px;'
-          )) %>%
-          visEvents(
-            doubleClick = "function(event) {
-            console.info(event)
-            clicked_node = event.nodes[0]
-            var selectElement = $('#sitenameExpanded').eq(0);
-            var selectize = selectElement.data('selectize');
-            selectize.setValue(clicked_node)
-            ;}"
-          )
       }
-      else
+      
+      var_visNetwork = visNetwork(nodes_limited, edges, height = "100%", width = "100%") %>% 
+        visPhysics(stabilization = FALSE) %>%
+        visEdges(smooth = FALSE,
+                 shadow = FALSE,
+                 arrows =list(to = list(enabled = TRUE, scaleFactor = 1)),
+                 color = list(color = "lightblue", highlight = "pink")) %>%
+        visLayout(randomSeed = 12) %>%
+        visOptions(nodesIdSelection = list(enabled = TRUE,
+                                           selected = nodeName,
+                                           style = 'width: 200px;'
+        )) %>%
+        visEvents(
+          doubleClick = doubleClickJs
+        ) 
+      
+      var_visNetwork = addVisGroups(var_visNetwork, nodes_limited)
+        
+      if(!no_edges)
       {
-        visNetwork(nodes_limited, edges, height = "100%", width = "100%") %>% 
-          visIgraphLayout() %>%
-          visPhysics(stabilization = FALSE) %>%
-          visEdges(smooth = FALSE,
-                   shadow = FALSE,
-                   arrows =list(to = list(enabled = TRUE, scaleFactor = 1)),
-                   color = list(color = "lightblue", highlight = "pink")) %>%
-          visLayout(randomSeed = 12) %>%
-          visOptions(nodesIdSelection = list(enabled = TRUE,
-                                             selected = nodeName,
-                                             style = 'width: 200px;'
-          )) %>%
-          visEvents(
-            doubleClick = "function(event) {
-            console.info(event)
-            clicked_node = event.nodes[0]
-            var selectElement = $('#sitenameExpanded').eq(0);
-            var selectize = selectElement.data('selectize');
-            selectize.setValue(clicked_node)
-            ;}"
-          )
+        var_visNetwork = var_visNetwork %>%visIgraphLayout()
       }
-
+      
+      return (var_visNetwork)
       
     }
     

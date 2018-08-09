@@ -1,0 +1,9 @@
+sudo su - -c "R -e \"install.packages('rmarkdown')\"" 
+sudo su - -c "R -e \"install.packages('visNetwork')\"" 
+sudo su - -c "R -e \"install.packages('DT')\"" 
+sudo su - -c "R -e \"install.packages('igraph')\""
+sudo apt install libssl-dev
+sudo apt install libcurl4-openssl-dev
+sudo su - -c "R -e \"install.packages('httr')\""
+sudo su - -c "R -e \"install.packages('rstudioapi')\""
+sudo su - -c "R -e \"install.packages('/writeable-project/RNeo4j.tar.gz', repos=NULL, type='source')\""
