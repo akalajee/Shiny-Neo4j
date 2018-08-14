@@ -3,6 +3,8 @@ library(visNetwork)
 library(R.cache)
 source("common.R")
 
+setCacheRootPath("~/.Rcache")
+#cat(file=stderr(), "R.cache directory", print(getCacheRootPath()))
 
   output$secondSelectionExpanded <- renderUI({
     
