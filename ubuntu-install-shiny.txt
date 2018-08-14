@@ -92,3 +92,20 @@ sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/backports.tar.
 sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/rprojroot.tar.gz', repos=NULL, type='source')\"" --success
 sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/xfun.tar.gz', repos=NULL, type='source')\"" --success
 sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/tinytex.tar.gz', repos=NULL, type='source')\"" --success
+
+R.cache:
+========
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/R.methodsS3.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/R.oo.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/R.utils.tar.gz', repos=NULL, type='source')\"" --success
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/R.cache.tar.gz', repos=NULL, type='source')\"" --success
+
+
+
+check if certain package installed:
+=====================================
+sudo su - -c "R -e \"if('R.methodsS3' %in% rownames(installed.packages()) == FALSE) {print ('not installed')}\"" -- not installed
+sudo su - -c "R -e \"if('R.oo' %in% rownames(installed.packages()) == FALSE) {print ('not installed')}\"" -- not installed
+sudo su - -c "R -e \"if('R.utils' %in% rownames(installed.packages()) == FALSE) {print ('not installed')}\"" -- not installed
+sudo su - -c "R -e \"if('digest' %in% rownames(installed.packages()) == FALSE) {print ('not installed')}\"" -- installed
+sudo su - -c "R -e \"if('R.cache' %in% rownames(installed.packages()) == FALSE) {print ('not installed')}\"" -- not installed

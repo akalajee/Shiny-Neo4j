@@ -1,5 +1,6 @@
 library(shiny)
 library(visNetwork)
+library(R.cache)
 source("common.R")
 
 
@@ -44,88 +45,59 @@ source("common.R")
     maxnodes = input$maxnodesExpanded
     showSource = input$showSourceExpanded
     
-    if(!is.null(nodeName) && nodeName != "")
+    createVisNetworkData <- function(nodeName, maxnodes, showSource)
     {
-      
-      total_node_query = paste("MATCH p=shortestPath(
-                                  (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
-                                ) where id(src) <> id(dst)
-                               UNWIND (nodes(p)) as my_nodes
-                               WITH DISTINCT(id(my_nodes)) as n
-                               RETURN count(n)
-                               ", sep="")
-      if(showSource)
+      if(!is.null(nodeName) && nodeName != "")
       {
+        
         total_node_query = paste("MATCH p=shortestPath(
-                                  (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
-                                  ) where id(src) <> id(dst) and src.bsc = true
+                                 (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
+        ) where id(src) <> id(dst)
                                  UNWIND (nodes(p)) as my_nodes
                                  WITH DISTINCT(id(my_nodes)) as n
                                  RETURN count(n)
                                  ", sep="")
-      }
-      
-      total_node_count = cypher(graph, total_node_query)[1,1]
-      total_node_count = ifelse(total_node_count >= 1, total_node_count, 1)
-      
-      reactiveTotalNodeCountExpanded(total_node_count)
-      output$totalSiteCountExpanded = renderText({paste("Total Nodes Count: ", total_node_count)})
-      
-      siteClassification = ifelse(total_node_count >= 21, 'A',
-                              ifelse(total_node_count >= 11 && total_node_count <= 20, 'B',
-                                        ifelse(total_node_count >= 2 && total_node_count <= 19, 'C',
-                                                  'D'
-                                               )
-                                     )
-                              )
-      output$siteClassification = renderText({paste("Site Classification: ", siteClassification)})
-      if(showSource)
-      {
-        output$siteClassification = renderText({""})
-      }
-      
-      node_limited_query = paste("
-                                 MATCH p=shortestPath(
-                            	   (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
-                                  ) where id(src) <> id(dst)
-                                 unwind nodes(p) AS k
-                                 with distinct(k) as m
-                                 RETURN m.name AS id,
-                                 m.name AS label,
-                                 replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group
-                                 LIMIT ",maxnodes,"
-                                 UNION MATCH (m{name:'",nodeName,"'})
-                                 RETURN m.name AS id,
-                                 m.name AS label,
-                                 replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group
-                       ", sep="")
-      
-      node_query = paste("
-                                 MATCH p=shortestPath(
-                            	   (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
-                                  ) where id(src) <> id(dst)
-                                 unwind nodes(p) AS k
-                                 with distinct(k) as m
-                                 RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS Group
-                                 UNION MATCH (m{name:'",nodeName,"'})
-                                 RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS Group
-                                ", sep="")
-      
-      edge_query = paste("
-                         MATCH p=shortestPath((src{name:'",nodeName,"'})-[:Link*..30]->(dst))
-                         where id(src) <> id(dst)
-                         with extract(x IN relationships(p) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: replace(LABELS(dst)[0] + ' - ' +  coalesce(dst.type2,'$') + ' - ' + coalesce(dst.type3,'$'), ' - $', '') }) AS rl
-                         unwind rl as record
-                         with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
-                         return from,  to,label, group
-                         ", sep = "")
-      
-      if(showSource)
-      {
-        node_limited_query = paste("
-                                 MATCH p=shortestPath(
+        if(showSource)
+        {
+          total_node_query = paste("MATCH p=shortestPath(
                                    (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
-                                    ) where id(src) <> id(dst) and src.bsc = true
+          ) where id(src) <> id(dst) and src.bsc = true
+                                   UNWIND (nodes(p)) as my_nodes
+                                   WITH DISTINCT(id(my_nodes)) as n
+                                   RETURN count(n)
+                                   ", sep="")
+        }
+        
+        total_node_count = cypher(graph, total_node_query)[1,1]
+        #output-var-1
+        total_node_count = ifelse(total_node_count >= 1, total_node_count, 1)
+        
+        #reactive-var-1
+        #reactiveTotalNodeCountExpanded(total_node_count)
+        
+        #output-display-1
+        #output$totalSiteCountExpanded = renderText({paste("Total Nodes Count: ", total_node_count)})
+        
+        #output-var-2
+        siteClassification = ifelse(total_node_count >= 21, 'A',
+                                    ifelse(total_node_count >= 11 && total_node_count <= 20, 'B',
+                                           ifelse(total_node_count >= 2 && total_node_count <= 19, 'C',
+                                                  'D'
+                                           )
+                                    )
+        )
+        
+        #output-display-2
+        #output$siteClassification = renderText({paste("Site Classification: ", siteClassification)})
+        #if(showSource)
+        #{
+        #  output$siteClassification = renderText({""})
+        #}
+        
+        node_limited_query = paste("
+                                   MATCH p=shortestPath(
+                                   (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
+                                   ) where id(src) <> id(dst)
                                    unwind nodes(p) AS k
                                    with distinct(k) as m
                                    RETURN m.name AS id,
@@ -140,77 +112,159 @@ source("common.R")
         
         node_query = paste("
                            MATCH p=shortestPath(
-                           (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
-                           ) where id(src) <> id(dst) and src.bsc = true
+                           (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
+                           ) where id(src) <> id(dst)
                            unwind nodes(p) AS k
                            with distinct(k) as m
-                           RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') as group
+                           RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS Group
                            UNION MATCH (m{name:'",nodeName,"'})
-                           RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') as group
+                           RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS Group
                            ", sep="")
         
         edge_query = paste("
-                           MATCH p=shortestPath((dst{name:'",nodeName,"'})<-[:Link*..30]-(src))
-                           where id(src) <> id(dst) and src.bsc = true
+                           MATCH p=shortestPath((src{name:'",nodeName,"'})-[:Link*..30]->(dst))
+                           where id(src) <> id(dst)
                            with extract(x IN relationships(p) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: replace(LABELS(dst)[0] + ' - ' +  coalesce(dst.type2,'$') + ' - ' + coalesce(dst.type3,'$'), ' - $', '') }) AS rl
                            unwind rl as record
                            with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                            return from,  to,label, group
                            ", sep = "")
-      }
-      
-      nodes_limited = cypher(graph, node_limited_query)
-      nodes = cypher(graph, node_query)
-      edges = cypher(graph, edge_query)
-  
-      edges = filterEdges(nodes_limited, edges)
-      reactiveNodeListExpanded(nodes)
-      
-      doubleClickJs = "function(event) {
-      clicked_node = event.nodes[0]
-      if(!!clicked_node){
-          var selectElement = $('#sitenameExpanded').eq(0);
-          var selectize = selectElement.data('selectize');
-          selectize.setValue(clicked_node)
-      }
-      ;}"
-      
-      no_edges = FALSE
-      if(length(edges) < 1)
-      {
-        no_edges = TRUE 
-        edge_query = paste("
-                         MATCH (src{name:'",nodeName,"'})
-                         return
-                         src.name as from, NULL as to, src.type as label, replace(LABELS(src)[0] + ' - ' +  coalesce(src.type2,'$') + ' - ' + coalesce(src.type3,'$'), ' - $', '') as group", sep = "")
-        edges = cypher(graph, edge_query)
-      }
-      
-      var_visNetwork = visNetwork(nodes_limited, edges, height = "100%", width = "100%") %>% 
-        visPhysics(stabilization = FALSE) %>%
-        visEdges(smooth = FALSE,
-                 shadow = FALSE,
-                 arrows =list(to = list(enabled = TRUE, scaleFactor = 1)),
-                 color = list(color = "lightblue", highlight = "pink")) %>%
-        visLayout(randomSeed = 12) %>%
-        visOptions(nodesIdSelection = list(enabled = TRUE,
-                                           selected = nodeName,
-                                           style = 'width: 200px;'
-        )) %>%
-        visEvents(
-          doubleClick = doubleClickJs
-        ) 
-      
-      var_visNetwork = addVisGroups(var_visNetwork, nodes_limited)
         
-      if(!no_edges)
-      {
-        var_visNetwork = var_visNetwork %>%visIgraphLayout()
+        if(showSource)
+        {
+          node_limited_query = paste("
+                                     MATCH p=shortestPath(
+                                     (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
+                                     ) where id(src) <> id(dst) and src.bsc = true
+                                     unwind nodes(p) AS k
+                                     with distinct(k) as m
+                                     RETURN m.name AS id,
+                                     m.name AS label,
+                                     replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group
+                                     LIMIT ",maxnodes,"
+                                     UNION MATCH (m{name:'",nodeName,"'})
+                                     RETURN m.name AS id,
+                                     m.name AS label,
+                                     replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group
+                                     ", sep="")
+          
+          node_query = paste("
+                             MATCH p=shortestPath(
+                             (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
+                             ) where id(src) <> id(dst) and src.bsc = true
+                             unwind nodes(p) AS k
+                             with distinct(k) as m
+                             RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') as group
+                             UNION MATCH (m{name:'",nodeName,"'})
+                             RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') as group
+                             ", sep="")
+          
+          edge_query = paste("
+                             MATCH p=shortestPath((dst{name:'",nodeName,"'})<-[:Link*..30]-(src))
+                             where id(src) <> id(dst) and src.bsc = true
+                             with extract(x IN relationships(p) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: replace(LABELS(dst)[0] + ' - ' +  coalesce(dst.type2,'$') + ' - ' + coalesce(dst.type3,'$'), ' - $', '') }) AS rl
+                             unwind rl as record
+                             with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
+                             return from,  to,label, group
+                             ", sep = "")
+        }
+        
+        nodes_limited = cypher(graph, node_limited_query)
+        nodes = cypher(graph, node_query)
+        edges = cypher(graph, edge_query)
+        
+        edges = filterEdges(nodes_limited, edges)
+        
+        #output-var-3
+        #reactive-var-2
+        #reactiveNodeListExpanded(nodes)
+        
+        doubleClickJs = "function(event) {
+        clicked_node = event.nodes[0]
+        if(!!clicked_node){
+        var selectElement = $('#sitenameExpanded').eq(0);
+        var selectize = selectElement.data('selectize');
+        selectize.setValue(clicked_node)
+        }
+        ;}"
+        
+        no_edges = FALSE
+        if(length(edges) < 1)
+        {
+          no_edges = TRUE 
+          edge_query = paste("
+                             MATCH (src{name:'",nodeName,"'})
+                             return
+                             src.name as from, NULL as to, src.type as label, replace(LABELS(src)[0] + ' - ' +  coalesce(src.type2,'$') + ' - ' + coalesce(src.type3,'$'), ' - $', '') as group", sep = "")
+          edges = cypher(graph, edge_query)
+        }
+        
+        var_visNetwork = visNetwork(nodes_limited, edges, height = "100%", width = "100%") %>% 
+          visPhysics(stabilization = FALSE) %>%
+          visEdges(smooth = FALSE,
+                   shadow = FALSE,
+                   arrows =list(to = list(enabled = TRUE, scaleFactor = 1)),
+                   color = list(color = "lightblue", highlight = "pink")) %>%
+          visLayout(randomSeed = 12) %>%
+          visOptions(nodesIdSelection = list(enabled = TRUE,
+                                             selected = nodeName,
+                                             style = 'width: 200px;'
+          )) %>%
+          visEvents(
+            doubleClick = doubleClickJs
+          ) 
+        
+        var_visNetwork = addVisGroups(var_visNetwork, nodes_limited)
+        
+        if(!no_edges)
+        {
+          var_visNetwork = var_visNetwork %>%visIgraphLayout()
+        }
+        
+        #output-var-4
+        #return-var
+        #return (var_visNetwork)
+        
+        return_var_list = list(
+          total_node_count = total_node_count,
+          siteClassification = siteClassification,
+          nodes = nodes,
+          var_visNetwork = var_visNetwork
+        )
+        
+        return (return_var_list)
       }
-      
-      return (var_visNetwork)
-      
     }
+    
+    key = list(nodeName, maxnodes, showSource)
+    my_network_var_list = loadCache(key)
+    if (is.null(my_network_var_list)) {
+      my_network_var_list = createVisNetworkData(nodeName, maxnodes, showSource)
+      saveCache(my_network_var_list, key=key)
+    }
+    
+    total_node_count = my_network_var_list[["total_node_count"]]
+    siteClassification = my_network_var_list[["siteClassification"]]
+    nodes = my_network_var_list[["nodes"]]
+    var_visNetwork = my_network_var_list[["var_visNetwork"]]
+    
+    #reactive-var-1
+    reactiveTotalNodeCountExpanded(total_node_count)
+    
+    #reactive-var-2
+    reactiveNodeListExpanded(nodes)
+    
+    #output-display-1
+    output$totalSiteCountExpanded = renderText({paste("Total Nodes Count: ", total_node_count)})
+    
+    #output-display-2
+    output$siteClassification = renderText({paste("Site Classification: ", siteClassification)})
+    if(showSource)
+    {
+      output$siteClassification = renderText({""})
+    }
+    
+    return (var_visNetwork)
     
   })
   
