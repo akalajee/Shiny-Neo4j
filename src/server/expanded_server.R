@@ -7,8 +7,7 @@ setCacheRootPath("~/.Rcache")
 #cat(file=stderr(), "R.cache directory", print(getCacheRootPath()))
 
   output$secondSelectionExpanded <- renderUI({
-    
-    
+
     all_node_query = paste("MATCH (n)
                            RETURN n.name AS sitename
                            order by n.name asc
@@ -34,24 +33,17 @@ setCacheRootPath("~/.Rcache")
   
   output$sliderExpanded <- renderUI({
     
-    totalNodeCountExpanded = reactiveTotalNodeCountExpanded()
-    sliderMaximumExpanded = totalNodeCountExpanded
-    sliderInput(inputId = "maxnodesExpanded", label = "Maximum displayed nodes", min = 1, max = sliderMaximumExpanded, value = sliderMaximumExpanded, step = 1)
-    
-  })
-  
-  
-  output$networkExpanded <- renderVisNetwork({
-    
     nodeName = input$sitenameExpanded
-    maxnodes = input$maxnodesExpanded
     showSource = input$showSourceExpanded
+    funcName = "getVisNetworkNodeCountData"
     
-    createVisNetworkData <- function(nodeName, maxnodes, showSource)
+    #browser()
+    
+    getVisNetworkNodeCountData <- function(nodeName, showSource)
     {
       if(!is.null(nodeName) && nodeName != "")
       {
-        
+        #browser()
         total_node_query = paste("MATCH p=shortestPath(
                                  (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
         ) where id(src) <> id(dst)
@@ -71,31 +63,68 @@ setCacheRootPath("~/.Rcache")
         }
         
         total_node_count = cypher(graph, total_node_query)[1,1]
-        #output-var-1
         total_node_count = ifelse(total_node_count >= 1, total_node_count, 1)
         
-        #reactive-var-1
-        #reactiveTotalNodeCountExpanded(total_node_count)
-        
-        #output-display-1
-        #output$totalSiteCountExpanded = renderText({paste("Total Nodes Count: ", total_node_count)})
-        
-        #output-var-2
         siteClassification = ifelse(total_node_count >= 21, 'A',
                                     ifelse(total_node_count >= 11 && total_node_count <= 20, 'B',
                                            ifelse(total_node_count >= 2 && total_node_count <= 19, 'C',
                                                   'D'
-                                           )
+                                                  )
+                                          )
                                     )
+        
+        return_var_list = list(
+          total_node_count = total_node_count,
+          siteClassification = siteClassification
         )
-        
-        #output-display-2
-        #output$siteClassification = renderText({paste("Site Classification: ", siteClassification)})
-        #if(showSource)
-        #{
-        #  output$siteClassification = renderText({""})
-        #}
-        
+      }
+    }
+    
+    key = list(funcName, nodeName, showSource)
+    node_count_var_list = loadCache(key)
+    if (is.null(node_count_var_list)) {
+      node_count_var_list = getVisNetworkNodeCountData(nodeName, showSource)
+      saveCache(node_count_var_list, key=key)
+    }
+    
+    total_node_count = node_count_var_list[["total_node_count"]]
+    siteClassification = node_count_var_list[["siteClassification"]]
+    
+    totalNodeCountExpanded = total_node_count
+    sliderMaximumExpanded = totalNodeCountExpanded
+    
+    #output-display-1
+    output$totalSiteCountExpanded = renderText({paste("Total Nodes Count: ", total_node_count)})
+    
+    #output-display-2
+    output$siteClassification = renderText({paste("Site Classification: ", siteClassification)})
+    if(showSource)
+    {
+      output$siteClassification = renderText({""})
+    }
+    
+    slider = sliderInput(inputId = "maxnodesExpanded", label = "Maximum displayed nodes", min = 1, max = sliderMaximumExpanded, value = sliderMaximumExpanded, step = 1)
+    #used to manually trigger renderVisNetwork
+    randomTemp(runif(1))
+    return(slider)
+  })
+  
+  
+  output$networkExpanded <- renderVisNetwork({
+    
+    #used to manually trigger renderVisNetwork
+    rt = randomTemp()
+    
+    nodeName = isolate(input$sitenameExpanded)
+    maxnodes = input$maxnodesExpanded
+    showSource = input$showSourceExpanded
+    funcName = "createVisNetworkData"
+    
+    createVisNetworkData <- function(nodeName, maxnodes, showSource)
+    {
+      if(!is.null(nodeName) && nodeName != "")
+      {
+        #cat(file=stderr(), "\nrenderVisNetwork: ", rt)
         node_limited_query = paste("
                                    MATCH p=shortestPath(
                                    (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
@@ -177,10 +206,6 @@ setCacheRootPath("~/.Rcache")
         
         edges = filterEdges(nodes_limited, edges)
         
-        #output-var-3
-        #reactive-var-2
-        #reactiveNodeListExpanded(nodes)
-        
         doubleClickJs = "function(event) {
         clicked_node = event.nodes[0]
         if(!!clicked_node){
@@ -223,51 +248,26 @@ setCacheRootPath("~/.Rcache")
           var_visNetwork = var_visNetwork %>%visIgraphLayout()
         }
         
-        #output-var-4
-        #return-var
-        #return (var_visNetwork)
-        
         return_var_list = list(
-          total_node_count = total_node_count,
-          siteClassification = siteClassification,
           nodes = nodes,
           var_visNetwork = var_visNetwork
         )
-        
-        return (return_var_list)
       }
     }
     
-    key = list(nodeName, maxnodes, showSource)
+    key = list(funcName, nodeName, maxnodes, showSource)
     my_network_var_list = loadCache(key)
     if (is.null(my_network_var_list)) {
       my_network_var_list = createVisNetworkData(nodeName, maxnodes, showSource)
       saveCache(my_network_var_list, key=key)
     }
     
-    total_node_count = my_network_var_list[["total_node_count"]]
-    siteClassification = my_network_var_list[["siteClassification"]]
     nodes = my_network_var_list[["nodes"]]
     var_visNetwork = my_network_var_list[["var_visNetwork"]]
     
-    #reactive-var-1
-    reactiveTotalNodeCountExpanded(total_node_count)
-    
-    #reactive-var-2
     reactiveNodeListExpanded(nodes)
     
-    #output-display-1
-    output$totalSiteCountExpanded = renderText({paste("Total Nodes Count: ", total_node_count)})
-    
-    #output-display-2
-    output$siteClassification = renderText({paste("Site Classification: ", siteClassification)})
-    if(showSource)
-    {
-      output$siteClassification = renderText({""})
-    }
-    
-    return (var_visNetwork)
-    
+    var_visNetwork
   })
   
   output$sitesListExpanded <- DT::renderDataTable({

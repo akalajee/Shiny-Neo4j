@@ -22,7 +22,7 @@ ui <- shiny::tabPanel(
       sidebarPanel(
         uiOutput("secondSelectionExpanded"),
         uiOutput("sliderExpanded"),
-        uiOutput("countInputExpanded"),
+        #uiOutput("countInputExpanded"),
         checkboxInput(inputId = "showSourceExpanded", label = "Show source?", value = FALSE),
         textOutput(outputId = "totalSiteCountExpanded"),
         textOutput(outputId = "siteClassification"),

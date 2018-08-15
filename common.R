@@ -11,6 +11,8 @@ reactiveTotalNodeCountExpanded = reactiveVal(0, "totalNodeCountExpanded")
 reactiveNodeList = reactiveVal(list(), "nodeList")
 reactiveNodeListExpanded = reactiveVal(list(), "nodeListExpanded")
 
+randomTemp = reactiveVal(0, "randomTemp")
+
 filterEdges = function(nodes, edges) {
   if(length(edges) < 1)
   {
