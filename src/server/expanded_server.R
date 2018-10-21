@@ -3,8 +3,9 @@ library(visNetwork)
 library(R.cache)
 source("common.R")
 
+clearCache()
 setCacheRootPath("~/.Rcache")
-#cat(file=stderr(), "R.cache directory", print(getCacheRootPath()))
+#cat(file=stderr(), "R.cache directory: ", print(getCacheRootPath()), "\n")
 
   output$secondSelectionExpanded <- renderUI({
 
@@ -65,13 +66,12 @@ setCacheRootPath("~/.Rcache")
         total_node_count = cypher(graph, total_node_query)[1,1]
         total_node_count = ifelse(total_node_count >= 1, total_node_count, 1)
         
-        siteClassification = ifelse(total_node_count >= 21, 'A',
-                                    ifelse(total_node_count >= 11 && total_node_count <= 20, 'B',
-                                           ifelse(total_node_count >= 2 && total_node_count <= 19, 'C',
-                                                  'D'
-                                                  )
-                                          )
-                                    )
+        detail_node_info_query = paste("MATCH (n{name:'",nodeName,"'})
+                                       RETURN n
+                                       ", sep="")
+        detail_node_info = cypherToList(graph, detail_node_info_query)
+        
+        siteClassification = getNodeClassification(detail_node_info, total_node_count)
         
         return_var_list = list(
           total_node_count = total_node_count,
@@ -147,9 +147,9 @@ setCacheRootPath("~/.Rcache")
                            ) where id(src) <> id(dst)
                            unwind nodes(p) AS k
                            with distinct(k) as m
-                           RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS Group
+                           RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS Group, apoc.text.join((m.cat),\", \") as Category, m.olt_customers as olt_customers
                            UNION MATCH (m{name:'",nodeName,"'})
-                           RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS Group
+                           RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS Group, apoc.text.join((m.cat),\", \") as Category, m.olt_customers as olt_customers
                            ", sep="")
         
         edge_query = paste("
@@ -185,9 +185,9 @@ setCacheRootPath("~/.Rcache")
                              ) where id(src) <> id(dst) and src.bsc = true
                              unwind nodes(p) AS k
                              with distinct(k) as m
-                             RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') as group
+                             RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') as group, apoc.text.join((m.cat),\", \") as Category, m.olt_customers as olt_customers
                              UNION MATCH (m{name:'",nodeName,"'})
-                             RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') as group
+                             RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') as group, apoc.text.join((m.cat),\", \") as Category, m.olt_customers as olt_customers
                              ", sep="")
           
           edge_query = paste("

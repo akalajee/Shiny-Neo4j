@@ -101,3 +101,42 @@ addVisGroups = function(var_visNetwork, nodes) {
   return (var_visNetwork)
   
 }
+
+getNodeClassification = function(detail_node_info, total_node_count) {
+  
+  node_category = detail_node_info[[1]][[1]][["cat"]]
+  olt_customers = as.numeric(detail_node_info[[1]][[1]][["olt_customers"]])
+  
+  
+  isBSC = ("BSC" %in% node_category)
+  isOSN = ("OSN" %in% node_category)
+  isIIB_AGGR = ("IIB_AGGR" %in% node_category)
+  isIIB_PREAGG = ("IIB_PREAGG" %in% node_category)
+  isIIB_SRM = ("IIB_SRM" %in% node_category)
+  isOLT = ("OLT" %in% node_category)
+  isVIP = ("VIP" %in% node_category)
+  isMW = ("MW" %in% node_category)
+  
+  siteClassification = ifelse(isBSC, 'BSC', 
+                              ifelse(isIIB_AGGR || isVIP || (isOLT && olt_customers >= 2000) , 'A', 
+                                     ifelse(isOSN || isIIB_PREAGG || (isOLT && olt_customers < 2000 && olt_customers > 500) , 'B',
+                                            ifelse((isOLT && olt_customers <= 500), 'C', 
+                                                   ifelse(isIIB_SRM, 'D', ''
+                                     )))))
+  
+  browser()
+ 
+  if (siteClassification == '')
+  {
+    siteClassification = ifelse(total_node_count >= 21, 'A',
+                                ifelse(total_node_count >= 11 && total_node_count <= 20, 'B',
+                                       ifelse(total_node_count >= 2 && total_node_count <= 19, 'C',
+                                              'D'
+                                       )
+                                )
+                          )
+  }
+  
+  return (siteClassification)
+  
+}
