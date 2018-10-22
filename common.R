@@ -104,8 +104,14 @@ addVisGroups = function(var_visNetwork, nodes) {
 
 getNodeClassification = function(detail_node_info, total_node_count) {
   
+  node_name = detail_node_info[[1]][[1]][["name"]]
   node_category = detail_node_info[[1]][[1]][["cat"]]
   olt_customers = as.numeric(detail_node_info[[1]][[1]][["olt_customers"]])
+  node_classification = detail_node_info[[1]][[1]][["classification"]]
+  if(node_classification != '' && !is.null(node_classification) && !is.na(node_classification))
+  {
+    return(node_classification)
+  }
   
   
   isBSC = ("BSC" %in% node_category)
@@ -123,8 +129,6 @@ getNodeClassification = function(detail_node_info, total_node_count) {
                                             ifelse((isOLT && olt_customers <= 500), 'C', 
                                                    ifelse(isIIB_SRM, 'D', ''
                                      )))))
-  
-  browser()
  
   if (siteClassification == '')
   {
@@ -136,7 +140,88 @@ getNodeClassification = function(detail_node_info, total_node_count) {
                                 )
                           )
   }
+  updateNodeClassification(nodeName = node_name, classification = siteClassification)
   
   return (siteClassification)
   
+}
+
+updateNodeClassification = function(nodeName, classification)
+{
+  query = "MATCH (n{name: {nodeName} })
+            RETURN n
+            LIMIT 1"
+  
+  node = getSingleNode(graph, query, nodeName=nodeName)
+  node = updateProp(node, classification = classification)
+}
+
+classifyAllDBNodes = function()
+{
+  all_node_query = paste("MATCH (n)
+                           RETURN n.name AS sitename
+                         order by n.name asc
+                         ")
+  
+  all_node_names_list = cypherToList(graph, all_node_query)
+
+  tx = newTransaction(graph)
+  update_node_classification_query = paste("
+                                                MATCH (n{name: {nodeName} })
+                                           set n.classification = {siteClassification}
+                                           ", sep="")
+  
+  i = 1
+  while (i<=length(all_node_names_list)){
+
+    nodeName = all_node_names_list[[i]][[1]]
+    if(!is.null(nodeName) && nodeName != "")
+    {
+      total_node_query = paste("MATCH p=shortestPath(
+                                 (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
+      ) where id(src) <> id(dst)
+                               UNWIND (nodes(p)) as my_nodes
+                               WITH DISTINCT(id(my_nodes)) as n
+                               RETURN count(n)
+                               ", sep="")
+      
+      total_node_count = cypher(graph, total_node_query)[1,1]
+      total_node_count = ifelse(total_node_count >= 1, total_node_count, 1)
+      
+      detail_node_info_query = paste("MATCH (n{name:'",nodeName,"'})
+                                       RETURN n
+                                     ", sep="")
+      detail_node_info = cypherToList(graph, detail_node_info_query)
+      
+      siteClassification = getNodeClassification(detail_node_info, total_node_count)
+      
+      #cat(file=stdout(), "Nodename: ", nodeName, " ||| classification: ", siteClassification ,"\n")
+      #update_node_classification_query = paste("
+      #                                          MATCH (n{name:\"",nodeName,"\"})
+      #                                          set n.classification = \"",siteClassification,"\"
+      #                                         ", sep="")
+      
+      appendCypher(tx, update_node_classification_query,
+                   nodeName=nodeName,
+                   siteClassification=siteClassification
+                   )
+    }
+        
+
+    i = i+1
+  }
+  
+  commit(tx)
+  
+}
+
+checkIfDBNodesClassified = function()
+{
+  random_node_classification_query = paste("MATCH (n)
+                           RETURN n.classification
+                         limit 1
+                         ")
+  
+  random_node_classification = cypher(graph, random_node_classification_query)
+  return (!is.na(random_node_classification[[1]]))
 }
