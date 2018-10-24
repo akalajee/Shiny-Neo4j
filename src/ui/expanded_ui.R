@@ -12,8 +12,9 @@ ui <- shiny::tabPanel(
     # Define UI for dataset viewer app ----
    fluidPage(
   
+    #img(src='dulogo.png'), #, align = "right", width="100", height="100"),
     # App title ----
-    titlePanel("Sites"),
+    titlePanel("Sites classification"),
   
     # Sidebar layout with input and output definitions ----
     sidebarLayout(
@@ -31,6 +32,7 @@ ui <- shiny::tabPanel(
     
     # Main panel for displaying outputs ----
       mainPanel(
+        img(src='dulogo.png', align = "right", width="20%"),
         visNetworkOutput("networkExpanded", height = "600px", width = "100%")
       )
     ),

@@ -102,7 +102,7 @@ addVisGroups = function(var_visNetwork, nodes) {
   
 }
 
-getNodeClassification = function(detail_node_info, total_node_count) {
+getNodeClassification = function(detail_node_info, total_node_count, update_db_classification = TRUE) {
   
   node_name = detail_node_info[[1]][[1]][["name"]]
   node_category = detail_node_info[[1]][[1]][["cat"]]
@@ -123,24 +123,37 @@ getNodeClassification = function(detail_node_info, total_node_count) {
   isVIP = ("VIP" %in% node_category)
   isMW = ("MW" %in% node_category)
   
+  #classificationLookup = data.frame(
+  #  code = c("D", "C", "B", "A", "BSC"),
+  #  rank = c(1:5)
+  #)
+  
+  MWsiteClassificationCode = ifelse(total_node_count >= 21, 'A',
+                                    ifelse(total_node_count >= 11 && total_node_count <= 20, 'B',
+                                           ifelse(total_node_count >= 2 && total_node_count <= 10, 'C',
+                                                  'D'
+                                           )
+                                    )
+  )
+  
   siteClassification = ifelse(isBSC, 'BSC', 
-                              ifelse(isIIB_AGGR || isVIP || (isOLT && olt_customers >= 2000) , 'A', 
-                                     ifelse(isOSN || isIIB_PREAGG || (isOLT && olt_customers < 2000 && olt_customers > 500) , 'B',
-                                            ifelse((isOLT && olt_customers <= 500), 'C', 
-                                                   ifelse(isIIB_SRM, 'D', ''
-                                     )))))
- 
-  if (siteClassification == '')
+                              ifelse(isIIB_AGGR || isVIP || (isOLT && olt_customers >= 2000) || (MWsiteClassificationCode == 'A') , 'A', 
+                                     ifelse(isOSN || isIIB_PREAGG || (isOLT && olt_customers < 2000 && olt_customers > 500) || (MWsiteClassificationCode == 'B') , 'B',
+                                            ifelse((isOLT && olt_customers <= 500) || (MWsiteClassificationCode == 'C'), 'C', 
+                                                   ifelse(isIIB_SRM || (MWsiteClassificationCode == 'D'), 'D', 'D')
+                                                   ))))
+  #nonMWsiteClassificationRank = classificationLookup[match(nonMWsiteClassificationCode, classificationLookup$code), "rank"]
+  
+  #MWsiteClassificationRank = classificationLookup[match(MWsiteClassificationCode, classificationLookup$code), "rank"]
+  
+  #highestClassificationRank = max(MWsiteClassificationRank, nonMWsiteClassificationRank)
+  #highestClassificationCode = classificationLookup[match(highestClassificationRank, classificationLookup$rank), "code"]
+  
+  #siteClassification = highestClassificationCode
+  if(update_db_classification)
   {
-    siteClassification = ifelse(total_node_count >= 21, 'A',
-                                ifelse(total_node_count >= 11 && total_node_count <= 20, 'B',
-                                       ifelse(total_node_count >= 2 && total_node_count <= 19, 'C',
-                                              'D'
-                                       )
-                                )
-                          )
+    updateNodeClassification(nodeName = node_name, classification = siteClassification) 
   }
-  updateNodeClassification(nodeName = node_name, classification = siteClassification)
   
   return (siteClassification)
   
@@ -193,7 +206,7 @@ classifyAllDBNodes = function()
                                      ", sep="")
       detail_node_info = cypherToList(graph, detail_node_info_query)
       
-      siteClassification = getNodeClassification(detail_node_info, total_node_count)
+      siteClassification = getNodeClassification(detail_node_info, total_node_count, update_db_classification = FALSE)
       
       #cat(file=stdout(), "Nodename: ", nodeName, " ||| classification: ", siteClassification ,"\n")
       #update_node_classification_query = paste("
