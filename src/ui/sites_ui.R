@@ -24,7 +24,7 @@ ui <- shiny::tabPanel(
     
     # Main panel for displaying outputs ----
       mainPanel(
-        img(src='dulogo.png', align = "right", width="20%", style="margin-right: -65px; margin-top: -30px;"),
+        img(src='dulogo.png', align = "right", width="15%"),
         visNetworkOutput("network", height = "600px", width = "100%"),
         width = 9
       )
