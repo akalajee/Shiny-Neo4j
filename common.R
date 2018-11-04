@@ -6,12 +6,11 @@ graph = startGraph(url = neo4j.url,
                    )
 
 reactiveTotalNodeCount = reactiveVal(0, "totalNodeCount")
-reactiveTotalNodeCountExpanded = reactiveVal(0, "totalNodeCountExpanded")
-
 reactiveNodeList = reactiveVal(list(), "nodeList")
-reactiveNodeListExpanded = reactiveVal(list(), "nodeListExpanded")
+reactiveNodeListReport = reactiveVal(list(), "reactiveNodeListReport")
 
 randomTemp = reactiveVal(0, "randomTemp")
+randomTempReport = reactiveVal(0, "randomTempReport")
 
 filterEdges = function(nodes, edges) {
   if(length(edges) < 1)

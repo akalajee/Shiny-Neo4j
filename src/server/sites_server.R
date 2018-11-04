@@ -11,8 +11,8 @@ if(!checkIfDBNodesClassified())
 }
 #cat(file=stderr(), "R.cache directory: ", print(getCacheRootPath()), "\n")
 
-  output$secondSelectionExpanded <- renderUI({
-
+  output$siteNameUI <- renderUI({
+    
     all_node_query = paste("MATCH (n)
                            RETURN n.name AS sitename
                            order by n.name asc
@@ -27,19 +27,22 @@ if(!checkIfDBNodesClassified())
       all_node_names = list("Site name" = node_matrix)  
     }
     
+    #browser()
+    
     # Input: Text for providing a caption ----
-    selectizeInput(inputId = "sitenameExpanded",
+    selectizeInput(inputId = "sitename",
                    label = "Choose source site name:",
                    choices = all_node_names
     )
     
+    
   })
   
   
-  output$sliderExpanded <- renderUI({
+  output$displaySiteCountSliderUI <- renderUI({
     
-    nodeName = input$sitenameExpanded
-    showSource = input$showSourceExpanded
+    nodeName = input$sitename
+    showSource = input$showSource
     funcName = "getVisNetworkNodeCountData"
     
     #browser()
@@ -84,6 +87,7 @@ if(!checkIfDBNodesClassified())
       }
     }
     
+    #browser()
     key = list(funcName, nodeName, showSource)
     node_count_var_list = loadCache(key)
     if (is.null(node_count_var_list)) {
@@ -94,34 +98,36 @@ if(!checkIfDBNodesClassified())
     total_node_count = node_count_var_list[["total_node_count"]]
     siteClassification = node_count_var_list[["siteClassification"]]
     
-    totalNodeCountExpanded = total_node_count
-    sliderMaximumExpanded = totalNodeCountExpanded
+    #browser()
+    
+    totalNodeCount = total_node_count
+    sliderMaximum = totalNodeCount
     
     #output-display-1
-    output$totalSiteCountExpanded = renderText({paste("Total Nodes Count: ", total_node_count)})
+    output$totalSiteCountUI = renderText({paste("Total Sites Count: ", total_node_count)})
     
     #output-display-2
-    output$siteClassification = renderText({paste("Site Classification: ", siteClassification)})
+    output$siteClassificationUI = renderText({paste("Site Classification: ", siteClassification)})
     if(showSource)
     {
-      output$siteClassification = renderText({""})
+      output$siteClassificationUI = renderText({""})
     }
     
-    slider = sliderInput(inputId = "maxnodesExpanded", label = "Maximum displayed nodes", min = 1, max = sliderMaximumExpanded, value = sliderMaximumExpanded, step = 1)
+    slider = sliderInput(inputId = "maxnodes", label = "Maximum displayed nodes", min = 1, max = sliderMaximum, value = sliderMaximum, step = 1)
     #used to manually trigger renderVisNetwork
     randomTemp(runif(1))
     return(slider)
   })
   
   
-  output$networkExpanded <- renderVisNetwork({
+  output$network <- renderVisNetwork({
     
     #used to manually trigger renderVisNetwork
     rt = randomTemp()
     
-    nodeName = isolate(input$sitenameExpanded)
-    maxnodes = input$maxnodesExpanded
-    showSource = input$showSourceExpanded
+    nodeName = isolate(input$sitename)
+    maxnodes = input$maxnodes
+    showSource = input$showSource
     funcName = "createVisNetworkData"
     
     createVisNetworkData <- function(nodeName, maxnodes, showSource)
@@ -213,7 +219,7 @@ if(!checkIfDBNodesClassified())
         doubleClickJs = "function(event) {
         clicked_node = event.nodes[0]
         if(!!clicked_node){
-        var selectElement = $('#sitenameExpanded').eq(0);
+        var selectElement = $('#sitename').eq(0);
         var selectize = selectElement.data('selectize');
         selectize.setValue(clicked_node)
         }
@@ -269,30 +275,30 @@ if(!checkIfDBNodesClassified())
     nodes = my_network_var_list[["nodes"]]
     var_visNetwork = my_network_var_list[["var_visNetwork"]]
     
-    reactiveNodeListExpanded(nodes)
+    reactiveNodeList(nodes)
     
     var_visNetwork
   })
   
-  output$sitesListExpanded <- DT::renderDataTable({
-    datalist = reactiveNodeListExpanded()
+  output$sitesList <- DT::renderDataTable({
+    datalist = reactiveNodeList()
     if(length(datalist) > 0)
     {
        DT::datatable(datalist, options = list(pageLength = 25))
     }
   })
   
-  output$downloadExpanded <- downloadHandler(
+  output$download <- downloadHandler(
     filename = function() {
       showSourceString = ""
-      if(input$showSourceExpanded)
+      if(input$showSource)
       {
         showSourceString = "-source"
       }
-      paste("expanded-sites-",input$sitenameExpanded, showSourceString,"-", Sys.Date(), ".csv", sep="")
+      paste("sites-",input$sitename, showSourceString,"-", Sys.Date(), ".csv", sep="")
     },
     content = function(file) {
-      write.csv(reactiveNodeListExpanded(), file)
+      write.csv(reactiveNodeList(), file)
     }
   )
   
