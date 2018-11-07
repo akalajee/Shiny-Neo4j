@@ -36,7 +36,7 @@ output$siteClassificationOutputUI <- renderUI({
       total_node_count = ifelse(total_node_count >= 1, total_node_count, 1)
       
       total_classified_node_query = paste("MATCH (m{classification:'",classification,"'})
-                                           RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group, apoc.text.join((m.cat),\", \") as category, m.olt_customers as olt_customers
+                                           RETURN m.name as `Site name`, apoc.text.join((m.cat),\", \") as group, m.olt_customers as olt_customers
                                           ", sep="")
       
       total_nodes = cypher(graph, total_classified_node_query)
