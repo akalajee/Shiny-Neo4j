@@ -3,12 +3,6 @@ library(visNetwork)
 library(R.cache)
 source("common.R")
 
-#clearCache()
-setCacheRootPath("~/.Rcache")
-if(!checkIfDBNodesClassified())
-{
-  classifyAllDBNodes() 
-}
 #cat(file=stderr(), "R.cache directory: ", print(getCacheRootPath()), "\n")
 
   output$siteNameUI <- renderUI({
@@ -52,19 +46,29 @@ if(!checkIfDBNodesClassified())
       if(!is.null(nodeName) && nodeName != "")
       {
         #browser()
-        total_node_query = paste("MATCH p=shortestPath(
+        total_node_query = paste("MATCH p1=shortestPath(
                                  (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
-        ) where id(src) <> id(dst)
-                                 UNWIND (nodes(p)) as my_nodes
+                                  ) where id(src) <> id(dst)
+                                  with (nodes(p1)) as p1_nodes
+                                  optional MATCH p2=shortestPath(
+                                 (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
+                                  ) where id(src) <> id(dst)
+                                 with p1_nodes + coalesce((nodes(p2)),[]) as all_nodes
+                                 UNWIND all_nodes as my_nodes
                                  WITH DISTINCT(id(my_nodes)) as n
                                  RETURN count(n)
                                  ", sep="")
         if(showSource)
         {
-          total_node_query = paste("MATCH p=shortestPath(
+          total_node_query = paste("MATCH p1=shortestPath(
                                    (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
           ) where id(src) <> id(dst) and src.bsc = true
-                                   UNWIND (nodes(p)) as my_nodes
+                                   with (nodes(p1)) as p1_nodes
+                                  optional MATCH p2=shortestPath(
+                                   (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
+                                    ) where id(src) <> id(dst)
+                                   with p1_nodes + coalesce((nodes(p2)),[]) as all_nodes
+                                   UNWIND all_nodes as my_nodes
                                    WITH DISTINCT(id(my_nodes)) as n
                                    RETURN count(n)
                                    ", sep="")
@@ -136,10 +140,15 @@ if(!checkIfDBNodesClassified())
       {
         #cat(file=stderr(), "\nrenderVisNetwork: ", rt)
         node_limited_query = paste("
-                                   MATCH p=shortestPath(
+                                   MATCH p1=shortestPath(
                                    (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
                                    ) where id(src) <> id(dst)
-                                   unwind nodes(p) AS k
+                                   with (nodes(p1)) as p1_nodes
+                                   optional MATCH p2=shortestPath(
+                                  (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
+                                          ) where id(src) <> id(dst)
+                                   with p1_nodes + coalesce((nodes(p2)),[]) as all_nodes
+                                   unwind all_nodes AS k
                                    with distinct(k) as m
                                    RETURN m.name AS id,
                                    m.name AS label,
@@ -152,10 +161,15 @@ if(!checkIfDBNodesClassified())
                                    ", sep="")
         
         node_query = paste("
-                           MATCH p=shortestPath(
+                           MATCH p1=shortestPath(
                            (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
                            ) where id(src) <> id(dst)
-                           unwind nodes(p) AS k
+                           with (nodes(p1)) as p1_nodes
+                           optional MATCH p2=shortestPath(
+                           (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
+                            ) where id(src) <> id(dst)
+                           with p1_nodes + coalesce((nodes(p2)),[]) as all_nodes
+                           unwind all_nodes AS k
                            with distinct(k) as m
                            RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group, apoc.text.join((m.cat),\", \") as category, m.olt_customers as olt_customers
                            UNION MATCH (m{name:'",nodeName,"'})
@@ -163,10 +177,13 @@ if(!checkIfDBNodesClassified())
                            ", sep="")
         
         edge_query = paste("
-                           MATCH p=shortestPath((src{name:'",nodeName,"'})-[:Link*..30]->(dst))
+                           MATCH p1=shortestPath((src{name:'",nodeName,"'})-[:Link*..30]->(dst))
                            where id(src) <> id(dst)
-                           with extract(x IN relationships(p) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: replace(LABELS(dst)[0] + ' - ' +  coalesce(dst.type2,'$') + ' - ' + coalesce(dst.type3,'$'), ' - $', '') }) AS rl
-                           unwind rl as record
+                           with extract(x IN relationships(p1) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: replace(LABELS(dst)[0] + ' - ' +  coalesce(dst.type2,'$') + ' - ' + coalesce(dst.type3,'$'), ' - $', '') }) AS rl1
+                           OPTIONAL MATCH p2=shortestPath( (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst) ) 
+                           where id(src) <> id(dst)
+                           with rl1 + coalesce(extract(x IN relationships(p2) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: replace(LABELS(dst)[0] + ' - ' +  coalesce(dst.type2,'$') + ' - ' + coalesce(dst.type3,'$'), ' - $', '') }), []) AS all_rl
+                           unwind all_rl as record
                            with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                            return from,  to,label, group
                            ", sep = "")
@@ -174,10 +191,15 @@ if(!checkIfDBNodesClassified())
         if(showSource)
         {
           node_limited_query = paste("
-                                     MATCH p=shortestPath(
+                                     MATCH p1=shortestPath(
                                      (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
                                      ) where id(src) <> id(dst) and src.bsc = true
-                                     unwind nodes(p) AS k
+                                     with (nodes(p1)) as p1_nodes
+                                     OPTIONAL MATCH p2=shortestPath(
+                                     (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
+                                      ) where id(src) <> id(dst)
+                                     with p1_nodes + coalesce((nodes(p2)),[]) as all_nodes
+                                     unwind all_nodes AS k
                                      with distinct(k) as m
                                      RETURN m.name AS id,
                                      m.name AS label,
@@ -190,10 +212,15 @@ if(!checkIfDBNodesClassified())
                                      ", sep="")
           
           node_query = paste("
-                             MATCH p=shortestPath(
+                             MATCH p1=shortestPath(
                              (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
                              ) where id(src) <> id(dst) and src.bsc = true
-                             unwind nodes(p) AS k
+                             with (nodes(p1)) as p1_nodes
+                             OPTIONAL MATCH p2=shortestPath(
+                             (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
+                              ) where id(src) <> id(dst)
+                             with p1_nodes + coalesce((nodes(p2)),[]) as all_nodes
+                             unwind all_nodes AS k
                              with distinct(k) as m
                              RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') as group, apoc.text.join((m.cat),\", \") as category, m.olt_customers as olt_customers
                              UNION MATCH (m{name:'",nodeName,"'})
@@ -201,13 +228,17 @@ if(!checkIfDBNodesClassified())
                              ", sep="")
           
           edge_query = paste("
-                             MATCH p=shortestPath((dst{name:'",nodeName,"'})<-[:Link*..30]-(src))
+                             MATCH p1=shortestPath((dst{name:'",nodeName,"'})<-[:Link*..30]-(src))
                              where id(src) <> id(dst) and src.bsc = true
-                             with extract(x IN relationships(p) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: replace(LABELS(dst)[0] + ' - ' +  coalesce(dst.type2,'$') + ' - ' + coalesce(dst.type3,'$'), ' - $', '') }) AS rl
-                             unwind rl as record
+                             with extract(x IN relationships(p1) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: replace(LABELS(dst)[0] + ' - ' +  coalesce(dst.type2,'$') + ' - ' + coalesce(dst.type3,'$'), ' - $', '') }) AS rl1
+                             OPTIONAL MATCH p2=shortestPath( (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst) ) 
+                             where id(src) <> id(dst)
+                             with rl1 + coalesce(extract(x IN relationships(p2) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: replace(LABELS(dst)[0] + ' - ' +  coalesce(dst.type2,'$') + ' - ' + coalesce(dst.type3,'$'), ' - $', '') }), []) AS all_rl
+                             unwind all_rl as record
                              with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                              return from,  to,label, group
                              ", sep = "")
+          browser()
         }
         
         nodes_limited = cypher(graph, node_limited_query)

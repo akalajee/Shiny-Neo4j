@@ -115,6 +115,7 @@ getNodeClassification = function(detail_node_info, total_node_count, update_db_c
   
   isBSC = ("BSC" %in% node_category)
   isOSN = ("OSN" %in% node_category)
+  isOTN = ("OTN" %in% node_category)
   isIIB_AGGR = ("IIB_AGGR" %in% node_category)
   isIIB_PREAGG = ("IIB_PREAGG" %in% node_category)
   isIIB_SRM = ("IIB_SRM" %in% node_category)
@@ -136,11 +137,13 @@ getNodeClassification = function(detail_node_info, total_node_count, update_db_c
   )
   
   siteClassification = ifelse(isBSC, 'BSC', 
-                              ifelse(isIIB_AGGR || isVIP || (isOLT && olt_customers >= 2000) || (MWsiteClassificationCode == 'A') , 'A', 
+                              ifelse(isOTN || isIIB_AGGR || isVIP || (isOLT && olt_customers >= 2000) || (MWsiteClassificationCode == 'A') , 'A', 
                                      ifelse(isOSN || isIIB_PREAGG || (isOLT && olt_customers < 2000 && olt_customers > 500) || (MWsiteClassificationCode == 'B') , 'B',
                                             ifelse((isOLT && olt_customers <= 500) || (MWsiteClassificationCode == 'C'), 'C', 
                                                    ifelse(isIIB_SRM || (MWsiteClassificationCode == 'D'), 'D', 'D')
                                                    ))))
+  
+  
   #nonMWsiteClassificationRank = classificationLookup[match(nonMWsiteClassificationCode, classificationLookup$code), "rank"]
   
   #MWsiteClassificationRank = classificationLookup[match(MWsiteClassificationCode, classificationLookup$code), "rank"]
@@ -170,13 +173,17 @@ updateNodeClassification = function(nodeName, classification)
 
 classifyAllDBNodes = function()
 {
+  progress <- shiny::Progress$new()
+  on.exit(progress$close())
+  progress$set(message = "Classifying sites", value = 0)
   all_node_query = paste("MATCH (n)
                            RETURN n.name AS sitename
                          order by n.name asc
                          ")
   
   all_node_names_list = cypherToList(graph, all_node_query)
-
+  all_nodes_count = length(all_node_names_list)
+  
   tx = newTransaction(graph)
   update_node_classification_query = paste("
                                                 MATCH (n{name: {nodeName} })
@@ -186,6 +193,11 @@ classifyAllDBNodes = function()
   i = 1
   while (i<=length(all_node_names_list)){
 
+    # If we were passed a progress update function, call it
+    if (is.function(updateProgress)) {
+      updateProgress(progress, i, all_nodes_count)
+    }
+    
     nodeName = all_node_names_list[[i]][[1]]
     if(!is.null(nodeName) && nodeName != "")
     {
@@ -236,4 +248,8 @@ checkIfDBNodesClassified = function()
   
   random_node_classification = cypher(graph, random_node_classification_query)
   return (!is.na(random_node_classification[[1]]))
+}
+
+updateProgress = function(progress, i, total) {
+  progress$inc(1/total, detail = paste(i, " out of ", total))
 }

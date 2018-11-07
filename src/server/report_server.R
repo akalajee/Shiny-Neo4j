@@ -3,8 +3,6 @@ library(visNetwork)
 library(R.cache)
 source("common.R")
 
-setCacheRootPath("~/.Rcache")
-
 output$siteClassificationSelectUI <- renderUI({
   
   # Input: Text for providing a caption ----
@@ -21,6 +19,11 @@ output$siteClassificationOutputUI <- renderUI({
   classification = input$classification
   funcName = "getReportNodeData"
 
+  if(!checkIfDBNodesClassified())
+  {
+    classifyAllDBNodes() 
+  }
+  
   getReportNodeData <- function(classification)
   {
     if(!is.null(classification) && classification != "")
