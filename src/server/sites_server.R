@@ -152,12 +152,12 @@ source("common.R")
                                    with distinct(k) as m
                                    RETURN m.name AS id,
                                    m.name AS label,
-                                   replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group
+                                   apoc.text.join((m.cat),\", \") AS group
                                    LIMIT ",maxnodes,"
                                    UNION MATCH (m{name:'",nodeName,"'})
                                    RETURN m.name AS id,
                                    m.name AS label,
-                                   replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group
+                                   apoc.text.join((m.cat),\", \") AS group
                                    ", sep="")
         
         node_query = paste("
@@ -171,18 +171,18 @@ source("common.R")
                            with p1_nodes + coalesce((nodes(p2)),[]) as all_nodes
                            unwind all_nodes AS k
                            with distinct(k) as m
-                           RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group, apoc.text.join((m.cat),\", \") as category, m.olt_customers as olt_customers
+                           RETURN m.name as `Site name`, apoc.text.join((m.cat),\", \") AS group, m.olt_customers as olt_customers
                            UNION MATCH (m{name:'",nodeName,"'})
-                           RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group, apoc.text.join((m.cat),\", \") as category, m.olt_customers as olt_customers
+                           RETURN m.name as `Site name`, apoc.text.join((m.cat),\", \") AS group, m.olt_customers as olt_customers
                            ", sep="")
         
         edge_query = paste("
                            MATCH p1=shortestPath((src{name:'",nodeName,"'})-[:Link*..30]->(dst))
                            where id(src) <> id(dst)
-                           with extract(x IN relationships(p1) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: replace(LABELS(dst)[0] + ' - ' +  coalesce(dst.type2,'$') + ' - ' + coalesce(dst.type3,'$'), ' - $', '') }) AS rl1
+                           with extract(x IN relationships(p1) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }) AS rl1
                            OPTIONAL MATCH p2=shortestPath( (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst) ) 
                            where id(src) <> id(dst)
-                           with rl1 + coalesce(extract(x IN relationships(p2) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: replace(LABELS(dst)[0] + ' - ' +  coalesce(dst.type2,'$') + ' - ' + coalesce(dst.type3,'$'), ' - $', '') }), []) AS all_rl
+                           with rl1 + coalesce(extract(x IN relationships(p2) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }), []) AS all_rl
                            unwind all_rl as record
                            with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                            return from,  to,label, group
@@ -203,12 +203,12 @@ source("common.R")
                                      with distinct(k) as m
                                      RETURN m.name AS id,
                                      m.name AS label,
-                                     replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group
+                                     apoc.text.join((m.cat),\", \") AS group
                                      LIMIT ",maxnodes,"
                                      UNION MATCH (m{name:'",nodeName,"'})
                                      RETURN m.name AS id,
                                      m.name AS label,
-                                     replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') AS group
+                                     apoc.text.join((m.cat),\", \") AS group
                                      ", sep="")
           
           node_query = paste("
@@ -222,18 +222,18 @@ source("common.R")
                              with p1_nodes + coalesce((nodes(p2)),[]) as all_nodes
                              unwind all_nodes AS k
                              with distinct(k) as m
-                             RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') as group, apoc.text.join((m.cat),\", \") as category, m.olt_customers as olt_customers
+                             RETURN m.name as `Site name`, apoc.text.join((m.cat),\", \") as group, m.olt_customers as olt_customers
                              UNION MATCH (m{name:'",nodeName,"'})
-                             RETURN m.name as `Site name`, replace(LABELS(m)[0] + ' - ' +  coalesce(m.type2,'$') + ' - ' + coalesce(m.type3,'$'), ' - $', '') as group, apoc.text.join((m.cat),\", \") as category, m.olt_customers as olt_customers
+                             RETURN m.name as `Site name`, apoc.text.join((m.cat),\", \") as group, m.olt_customers as olt_customers
                              ", sep="")
           
           edge_query = paste("
                              MATCH p1=shortestPath((dst{name:'",nodeName,"'})<-[:Link*..30]-(src))
                              where id(src) <> id(dst) and src.bsc = true
-                             with extract(x IN relationships(p1) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: replace(LABELS(dst)[0] + ' - ' +  coalesce(dst.type2,'$') + ' - ' + coalesce(dst.type3,'$'), ' - $', '') }) AS rl1
+                             with extract(x IN relationships(p1) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }) AS rl1
                              OPTIONAL MATCH p2=shortestPath( (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst) ) 
                              where id(src) <> id(dst)
-                             with rl1 + coalesce(extract(x IN relationships(p2) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: replace(LABELS(dst)[0] + ' - ' +  coalesce(dst.type2,'$') + ' - ' + coalesce(dst.type3,'$'), ' - $', '') }), []) AS all_rl
+                             with rl1 + coalesce(extract(x IN relationships(p2) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }), []) AS all_rl
                              unwind all_rl as record
                              with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                              return from,  to,label, group
@@ -263,7 +263,7 @@ source("common.R")
           edge_query = paste("
                              MATCH (src{name:'",nodeName,"'})
                              return
-                             src.name as from, NULL as to, src.type as label, replace(LABELS(src)[0] + ' - ' +  coalesce(src.type2,'$') + ' - ' + coalesce(src.type3,'$'), ' - $', '') as group", sep = "")
+                             src.name as from, NULL as to, src.type as label, apoc.text.join((src.cat),\", \") as group", sep = "")
           edges = cypher(graph, edge_query)
         }
         
