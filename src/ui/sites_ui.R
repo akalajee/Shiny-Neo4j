@@ -15,7 +15,7 @@ ui <- shiny::tabPanel(
       # Sidebar panel for inputs ----
       sidebarPanel(
         uiOutput("siteNameUI"),
-        uiOutput("displaySiteCountSliderUI"),
+        uiOutput("displaySiteCountClassificationUI"),
         checkboxInput(inputId = "showSource", label = "Show source?", value = FALSE),
         textOutput(outputId = "totalSiteCountUI"),
         textOutput(outputId = "siteClassificationUI"),

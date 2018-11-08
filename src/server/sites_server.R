@@ -21,8 +21,6 @@ source("common.R")
       all_node_names = list("Site name" = node_matrix)  
     }
     
-    #browser()
-    
     # Input: Text for providing a caption ----
     selectizeInput(inputId = "sitename",
                    label = "Choose source site name:",
@@ -33,19 +31,16 @@ source("common.R")
   })
   
   
-  output$displaySiteCountSliderUI <- renderUI({
+  output$displaySiteCountClassificationUI <- renderUI({
     
     nodeName = input$sitename
     showSource = input$showSource
     funcName = "getVisNetworkNodeCountData"
     
-    #browser()
-    
     getVisNetworkNodeCountData <- function(nodeName, showSource)
     {
       if(!is.null(nodeName) && nodeName != "")
       {
-        #browser()
         total_node_query = paste("MATCH p1=shortestPath(
                                  (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
                                   ) where id(src) <> id(dst)
@@ -60,10 +55,10 @@ source("common.R")
                                  ", sep="")
         if(showSource)
         {
-          total_node_query = paste("MATCH p1=shortestPath(
+          total_node_query = paste("optional MATCH p1=shortestPath(
                                    (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
           ) where id(src) <> id(dst) and src.bsc = true
-                                   with (nodes(p1)) as p1_nodes
+                                   with coalesce((nodes(p1)),[]) as p1_nodes
                                   optional MATCH p2=shortestPath(
                                    (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
                                     ) where id(src) <> id(dst)
@@ -91,7 +86,6 @@ source("common.R")
       }
     }
     
-    #browser()
     key = list(funcName, nodeName, showSource)
     node_count_var_list = loadCache(key)
     if (is.null(node_count_var_list)) {
@@ -102,10 +96,7 @@ source("common.R")
     total_node_count = node_count_var_list[["total_node_count"]]
     siteClassification = node_count_var_list[["siteClassification"]]
     
-    #browser()
-    
     totalNodeCount = total_node_count
-    sliderMaximum = totalNodeCount
     
     #output-display-1
     output$totalSiteCountUI = renderText({paste("Total Sites Count: ", total_node_count)})
@@ -117,135 +108,97 @@ source("common.R")
       output$siteClassificationUI = renderText({""})
     }
     
-    slider = sliderInput(inputId = "maxnodes", label = "Maximum displayed nodes", min = 1, max = sliderMaximum, value = sliderMaximum, step = 1)
-    #used to manually trigger renderVisNetwork
-    randomTemp(runif(1))
-    return(slider)
+    return()
   })
   
   
   output$network <- renderVisNetwork({
     
-    #used to manually trigger renderVisNetwork
-    rt = randomTemp()
-    
-    nodeName = isolate(input$sitename)
-    maxnodes = input$maxnodes
+    nodeName = input$sitename
+    #maxnodes = input$maxnodes
     showSource = input$showSource
     funcName = "createVisNetworkData"
     
-    createVisNetworkData <- function(nodeName, maxnodes, showSource)
+    createVisNetworkData <- function(nodeName, showSource)
     {
       if(!is.null(nodeName) && nodeName != "")
       {
-        #cat(file=stderr(), "\nrenderVisNetwork: ", rt)
-        node_limited_query = paste("
-                                   MATCH p1=shortestPath(
-                                   (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
-                                   ) where id(src) <> id(dst)
-                                   with (nodes(p1)) as p1_nodes
-                                   optional MATCH p2=shortestPath(
-                                  (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
-                                          ) where id(src) <> id(dst)
-                                   with p1_nodes + coalesce((nodes(p2)),[]) as all_nodes
-                                   unwind all_nodes AS k
-                                   with distinct(k) as m
-                                   RETURN m.name AS id,
-                                   m.name AS label,
-                                   apoc.text.join((m.cat),\", \") AS group
-                                   LIMIT ",maxnodes,"
-                                   UNION MATCH (m{name:'",nodeName,"'})
-                                   RETURN m.name AS id,
-                                   m.name AS label,
-                                   apoc.text.join((m.cat),\", \") AS group
-                                   ", sep="")
-        
         node_query = paste("
                            MATCH p1=shortestPath(
                            (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
                            ) where id(src) <> id(dst)
                            with (nodes(p1)) as p1_nodes
-                           optional MATCH p2=shortestPath(
+                           unwind p1_nodes AS k
+                           with distinct(k) as m
+                           RETURN m.name AS id, m.name AS label, m.name as `Site name`, apoc.text.join((m.cat),\", \") AS group, m.olt_customers as olt_customers
+                           UNION MATCH p2=shortestPath(
                            (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
                             ) where id(src) <> id(dst)
-                           with p1_nodes + coalesce((nodes(p2)),[]) as all_nodes
-                           unwind all_nodes AS k
+                           with (nodes(p2)) as p2_nodes
+                           unwind p2_nodes AS k
                            with distinct(k) as m
-                           RETURN m.name as `Site name`, apoc.text.join((m.cat),\", \") AS group, m.olt_customers as olt_customers
+                           RETURN m.name AS id, m.name AS label, m.name as `Site name`, apoc.text.join((m.cat),\", \") AS group, m.olt_customers as olt_customers
                            UNION MATCH (m{name:'",nodeName,"'})
-                           RETURN m.name as `Site name`, apoc.text.join((m.cat),\", \") AS group, m.olt_customers as olt_customers
+                           RETURN m.name AS id, m.name AS label, m.name as `Site name`, apoc.text.join((m.cat),\", \") AS group, m.olt_customers as olt_customers
                            ", sep="")
         
         edge_query = paste("
                            MATCH p1=shortestPath((src{name:'",nodeName,"'})-[:Link*..30]->(dst))
                            where id(src) <> id(dst)
                            with extract(x IN relationships(p1) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }) AS rl1
-                           OPTIONAL MATCH p2=shortestPath( (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst) ) 
+                           unwind rl1 as record
+                           with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
+                           return from,  to,label, group
+                           UNION MATCH p2=shortestPath( (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst) ) 
                            where id(src) <> id(dst)
-                           with rl1 + coalesce(extract(x IN relationships(p2) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }), []) AS all_rl
-                           unwind all_rl as record
+                           with extract(x IN relationships(p2) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }) AS rl2
+                           unwind rl2 as record
                            with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                            return from,  to,label, group
                            ", sep = "")
         
         if(showSource)
         {
-          node_limited_query = paste("
-                                     MATCH p1=shortestPath(
-                                     (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
-                                     ) where id(src) <> id(dst) and src.bsc = true
-                                     with (nodes(p1)) as p1_nodes
-                                     OPTIONAL MATCH p2=shortestPath(
-                                     (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
-                                      ) where id(src) <> id(dst)
-                                     with p1_nodes + coalesce((nodes(p2)),[]) as all_nodes
-                                     unwind all_nodes AS k
-                                     with distinct(k) as m
-                                     RETURN m.name AS id,
-                                     m.name AS label,
-                                     apoc.text.join((m.cat),\", \") AS group
-                                     LIMIT ",maxnodes,"
-                                     UNION MATCH (m{name:'",nodeName,"'})
-                                     RETURN m.name AS id,
-                                     m.name AS label,
-                                     apoc.text.join((m.cat),\", \") AS group
-                                     ", sep="")
           
           node_query = paste("
                              MATCH p1=shortestPath(
                              (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
                              ) where id(src) <> id(dst) and src.bsc = true
                              with (nodes(p1)) as p1_nodes
-                             OPTIONAL MATCH p2=shortestPath(
+                             unwind p1_nodes AS k
+                             with distinct(k) as m
+                             RETURN m.name AS id, m.name AS label, m.name as `Site name`, apoc.text.join((m.cat),\", \") AS group, m.olt_customers as olt_customers
+                             UNION MATCH p2=shortestPath(
                              (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
                               ) where id(src) <> id(dst)
-                             with p1_nodes + coalesce((nodes(p2)),[]) as all_nodes
-                             unwind all_nodes AS k
+                             with (nodes(p2)) as p2_nodes
+                             unwind p2_nodes AS k
                              with distinct(k) as m
-                             RETURN m.name as `Site name`, apoc.text.join((m.cat),\", \") as group, m.olt_customers as olt_customers
+                             RETURN m.name AS id, m.name AS label, m.name as `Site name`, apoc.text.join((m.cat),\", \") as group, m.olt_customers as olt_customers
                              UNION MATCH (m{name:'",nodeName,"'})
-                             RETURN m.name as `Site name`, apoc.text.join((m.cat),\", \") as group, m.olt_customers as olt_customers
+                             RETURN m.name AS id, m.name AS label, m.name as `Site name`, apoc.text.join((m.cat),\", \") as group, m.olt_customers as olt_customers
                              ", sep="")
           
           edge_query = paste("
                              MATCH p1=shortestPath((dst{name:'",nodeName,"'})<-[:Link*..30]-(src))
                              where id(src) <> id(dst) and src.bsc = true
                              with extract(x IN relationships(p1) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }) AS rl1
-                             OPTIONAL MATCH p2=shortestPath( (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst) ) 
+                             unwind rl1 as record
+                             with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
+                             return from,  to,label, group
+                             UNION MATCH p2=shortestPath( (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst) ) 
                              where id(src) <> id(dst)
-                             with rl1 + coalesce(extract(x IN relationships(p2) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }), []) AS all_rl
-                             unwind all_rl as record
+                             with extract(x IN relationships(p2) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }) AS rl2
+                             unwind rl2 as record
                              with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                              return from,  to,label, group
                              ", sep = "")
-          browser()
         }
         
-        nodes_limited = cypher(graph, node_limited_query)
         nodes = cypher(graph, node_query)
         edges = cypher(graph, edge_query)
         
-        edges = filterEdges(nodes_limited, edges)
+        edges = filterEdges(nodes, edges)
         
         doubleClickJs = "function(event) {
         clicked_node = event.nodes[0]
@@ -267,7 +220,7 @@ source("common.R")
           edges = cypher(graph, edge_query)
         }
         
-        var_visNetwork = visNetwork(nodes_limited, edges, height = "100%", width = "100%") %>% 
+        var_visNetwork = visNetwork(nodes, edges, height = "100%", width = "100%") %>% 
           visPhysics(stabilization = FALSE) %>%
           visEdges(smooth = FALSE,
                    shadow = FALSE,
@@ -282,7 +235,7 @@ source("common.R")
             doubleClick = doubleClickJs
           ) 
         
-        var_visNetwork = addVisGroups(var_visNetwork, nodes_limited)
+        var_visNetwork = addVisGroups(var_visNetwork, nodes)
         
         if(!no_edges)
         {
@@ -296,10 +249,10 @@ source("common.R")
       }
     }
     
-    key = list(funcName, nodeName, maxnodes, showSource)
+    key = list(funcName, nodeName, showSource)
     my_network_var_list = loadCache(key)
     if (is.null(my_network_var_list)) {
-      my_network_var_list = createVisNetworkData(nodeName, maxnodes, showSource)
+      my_network_var_list = createVisNetworkData(nodeName, showSource)
       saveCache(my_network_var_list, key=key)
     }
     
@@ -315,7 +268,8 @@ source("common.R")
     datalist = reactiveNodeList()
     if(length(datalist) > 0)
     {
-       DT::datatable(datalist, options = list(pageLength = 25))
+      datalist = datalist[,!names(datalist) %in% c("id", "label")]
+      DT::datatable(datalist, options = list(pageLength = 25))
     }
   })
   
@@ -329,7 +283,9 @@ source("common.R")
       paste("sites-",input$sitename, showSourceString,"-", Sys.Date(), ".csv", sep="")
     },
     content = function(file) {
-      write.csv(reactiveNodeList(), file)
+      datalist = reactiveNodeList()
+      datalist = datalist[,!names(datalist) %in% c("id", "label")]
+      write.csv(datalist, file)
     }
   )
   
