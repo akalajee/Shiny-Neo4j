@@ -53,23 +53,44 @@ source("common.R")
                                  WITH DISTINCT(id(my_nodes)) as n
                                  RETURN count(n)
                                  ", sep="")
+        
+        q1_node_query = paste("MATCH p1=shortestPath(
+                         (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
+                          ) where id(src) <> id(dst)
+                         with (nodes(p1)) as p1_nodes 
+                         UNWIND p1_nodes as my_nodes 
+                         return DISTINCT(id(my_nodes))", sep="")
+        
+        q2_node_query = paste("MATCH p2=shortestPath(
+                         (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
+                          ) where id(src) <> id(dst)
+                         with (nodes(p2)) as p2_nodes 
+                         UNWIND p2_nodes as my_nodes 
+                         return DISTINCT(id(my_nodes))", sep="")
+      
         if(showSource)
         {
-          total_node_query = paste("optional MATCH p1=shortestPath(
+          q1_node_query = paste("MATCH p1=shortestPath(
                                    (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
           ) where id(src) <> id(dst) and src.bsc = true
-                                   with coalesce((nodes(p1)),[]) as p1_nodes
-                                  optional MATCH p2=shortestPath(
-                                   (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
-                                    ) where id(src) <> id(dst)
-                                   with p1_nodes + coalesce((nodes(p2)),[]) as all_nodes
-                                   UNWIND all_nodes as my_nodes
-                                   WITH DISTINCT(id(my_nodes)) as n
-                                   RETURN count(n)
-                                   ", sep="")
+                                   with (nodes(p1)) as p1_nodes
+                                   UNWIND p1_nodes as my_nodes
+                                   return DISTINCT(id(my_nodes))", sep="")
+          
+          q2_node_query = paste("MATCH p2=shortestPath(
+                                (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
+                                ) where id(src) <> id(dst)
+                                with (nodes(p2)) as p2_nodes
+                                UNWIND p2_nodes as my_nodes
+                                return DISTINCT(id(my_nodes))", sep="")
         }
         
-        total_node_count = cypher(graph, total_node_query)[1,1]
+        q1_node = cypher(graph, q1_node_query)
+        q2_node = cypher(graph, q2_node_query)
+        combined_node = rbind(q1_node,q2_node)
+        unique_node = unique(combined_node[[1]])
+        total_node_count = length(unique_node)
+        
         total_node_count = ifelse(total_node_count >= 1, total_node_count, 1)
         
         detail_node_info_query = paste("MATCH (n{name:'",nodeName,"'})
