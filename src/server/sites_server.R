@@ -301,7 +301,7 @@ source("common.R")
       {
         showSourceString = "-source"
       }
-      paste("sites-",input$sitename, showSourceString,"-", Sys.Date(), ".csv", sep="")
+      paste("Sites-",input$sitename, showSourceString,"-", Sys.Date(), ".csv", sep="")
     },
     content = function(file) {
       datalist = reactiveNodeList()
