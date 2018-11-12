@@ -65,7 +65,7 @@ output$siteCategoryOutputUI <- renderUI({
   #output-display-1
   
   if (!is.null(total_nodes)) {
-    reactiveNodeListReport(total_nodes)
+    reactiveNodeListCategoryReport(total_nodes)
   }
   
   output$totalSiteCountCategoryReportUI = renderText({paste("Total Sites Count: ", total_node_count)})
@@ -75,7 +75,7 @@ output$siteCategoryOutputUI <- renderUI({
 })
 
 output$categorySitesListReport <- DT::renderDataTable({
-  datalist = reactiveNodeListReport()
+  datalist = reactiveNodeListCategoryReport()
   if(length(datalist) > 0)
   {
     DT::datatable(datalist, options = list(pageLength = 25))
@@ -87,7 +87,7 @@ output$downloadCategoryReport <- downloadHandler(
     paste("SitesCategoryReport-",input$category, "-" , Sys.Date(), ".csv", sep="")
   },
   content = function(file) {
-    write.csv(reactiveNodeListReport(), file)
+    write.csv(reactiveNodeListCategoryReport(), file)
   }
 )
 

@@ -61,7 +61,7 @@ output$siteClassificationOutputUI <- renderUI({
   #output-display-1
   
   if (!is.null(total_nodes)) {
-    reactiveNodeListReport(total_nodes)
+    reactiveNodeListClassificationReport(total_nodes)
   }
   
   output$totalSiteCountReportUI = renderText({paste("Total Sites Count: ", total_node_count)})
@@ -71,7 +71,7 @@ output$siteClassificationOutputUI <- renderUI({
 })
 
 output$sitesListReport <- DT::renderDataTable({
-  datalist = reactiveNodeListReport()
+  datalist = reactiveNodeListClassificationReport()
   if(length(datalist) > 0)
   {
     DT::datatable(datalist, options = list(pageLength = 25))
@@ -83,7 +83,7 @@ output$downloadReport <- downloadHandler(
     paste("SitesClassificationReport-",input$classification, "-", Sys.Date(), ".csv", sep="")
   },
   content = function(file) {
-    write.csv(reactiveNodeListReport(), file)
+    write.csv(reactiveNodeListClassificationReport(), file)
   }
 )
 
