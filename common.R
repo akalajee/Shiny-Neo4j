@@ -201,15 +201,26 @@ classifyAllDBNodes = function()
     nodeName = all_node_names_list[[i]][[1]]
     if(!is.null(nodeName) && nodeName != "")
     {
-      total_node_query = paste("MATCH p=shortestPath(
-                                 (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
-      ) where id(src) <> id(dst)
-                               UNWIND (nodes(p)) as my_nodes
-                               WITH DISTINCT(id(my_nodes)) as n
-                               RETURN count(n)
-                               ", sep="")
+      q1_node_query = paste("MATCH p1=shortestPath(
+                         (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
+                          ) where id(src) <> id(dst)
+                         with (nodes(p1)) as p1_nodes 
+                         UNWIND p1_nodes as my_nodes 
+                         return DISTINCT(id(my_nodes))", sep="")
       
-      total_node_count = cypher(graph, total_node_query)[1,1]
+      q2_node_query = paste("MATCH p2=shortestPath(
+                         (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
+                          ) where id(src) <> id(dst)
+                         with (nodes(p2)) as p2_nodes 
+                         UNWIND p2_nodes as my_nodes 
+                         return DISTINCT(id(my_nodes))", sep="")
+      
+      q1_node = cypher(graph, q1_node_query)
+      q2_node = cypher(graph, q2_node_query)
+      combined_node = rbind(q1_node,q2_node)
+      unique_node = unique(combined_node[[1]])
+      total_node_count = length(unique_node)
+      
       total_node_count = ifelse(total_node_count >= 1, total_node_count, 1)
       
       detail_node_info_query = paste("MATCH (n{name:'",nodeName,"'})

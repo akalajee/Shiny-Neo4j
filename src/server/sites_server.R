@@ -41,18 +41,6 @@ source("common.R")
     {
       if(!is.null(nodeName) && nodeName != "")
       {
-        total_node_query = paste("MATCH p1=shortestPath(
-                                 (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
-                                  ) where id(src) <> id(dst)
-                                  with (nodes(p1)) as p1_nodes
-                                  optional MATCH p2=shortestPath(
-                                 (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
-                                  ) where id(src) <> id(dst)
-                                 with p1_nodes + coalesce((nodes(p2)),[]) as all_nodes
-                                 UNWIND all_nodes as my_nodes
-                                 WITH DISTINCT(id(my_nodes)) as n
-                                 RETURN count(n)
-                                 ", sep="")
         
         q1_node_query = paste("MATCH p1=shortestPath(
                          (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
