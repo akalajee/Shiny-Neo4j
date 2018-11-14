@@ -137,8 +137,8 @@ getNodeClassification = function(detail_node_info, total_node_count, update_db_c
   )
   
   siteClassification = ifelse(isBSC, 'BSC', 
-                              ifelse(isOTN || isIIB_AGGR || isVIP || (isOLT && olt_customers >= 2000) || (MWsiteClassificationCode == 'A') , 'A', 
-                                     ifelse(isOSN || isIIB_PREAGG || (isOLT && olt_customers < 2000 && olt_customers > 500) || (MWsiteClassificationCode == 'B') , 'B',
+                              ifelse(isOTN || isIIB_AGGR || (isOLT && olt_customers >= 2000) || (MWsiteClassificationCode == 'A') , 'A', 
+                                     ifelse(isOSN || isIIB_PREAGG || isVIP || (isOLT && olt_customers < 2000 && olt_customers > 500) || (MWsiteClassificationCode == 'B') , 'B',
                                             ifelse((isOLT && olt_customers <= 500) || (MWsiteClassificationCode == 'C'), 'C', 
                                                    ifelse(isIIB_SRM || (MWsiteClassificationCode == 'D'), 'D', 'D')
                                                    ))))
