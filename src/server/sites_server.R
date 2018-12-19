@@ -42,49 +42,9 @@ source("common.R")
       if(!is.null(nodeName) && nodeName != "")
       {
         
-        q1_node_query = paste("MATCH p1=shortestPath(
-                         (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
-                          ) where id(src) <> id(dst)
-                         with (nodes(p1)) as p1_nodes 
-                         UNWIND p1_nodes as my_nodes 
-                         return DISTINCT(id(my_nodes))", sep="")
+        total_node_count = getGraphTotalNodeCount(nodeName, showSource)
         
-        q2_node_query = paste("MATCH p2=shortestPath(
-                         (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
-                          ) where id(src) <> id(dst)
-                         with (nodes(p2)) as p2_nodes 
-                         UNWIND p2_nodes as my_nodes 
-                         return DISTINCT(id(my_nodes))", sep="")
-      
-        if(showSource)
-        {
-          q1_node_query = paste("MATCH p1=shortestPath(
-                                   (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
-          ) where id(src) <> id(dst) and src.bsc = true
-                                   with (nodes(p1)) as p1_nodes
-                                   UNWIND p1_nodes as my_nodes
-                                   return DISTINCT(id(my_nodes))", sep="")
-          
-          q2_node_query = paste("MATCH p2=shortestPath(
-                                (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
-                                ) where id(src) <> id(dst)
-                                with (nodes(p2)) as p2_nodes
-                                UNWIND p2_nodes as my_nodes
-                                return DISTINCT(id(my_nodes))", sep="")
-        }
-        
-        q1_node = cypher(graph, q1_node_query)
-        q2_node = cypher(graph, q2_node_query)
-        combined_node = rbind(q1_node,q2_node)
-        unique_node = unique(combined_node[[1]])
-        total_node_count = length(unique_node)
-        
-        total_node_count = ifelse(total_node_count >= 1, total_node_count, 1)
-        
-        detail_node_info_query = paste("MATCH (n{name:'",nodeName,"'})
-                                       RETURN n
-                                       ", sep="")
-        detail_node_info = cypherToList(graph, detail_node_info_query)
+        detail_node_info = getNodeDetailedInfo(nodeName)
         
         siteClassification = getNodeClassification(detail_node_info, total_node_count)
         
@@ -132,6 +92,9 @@ source("common.R")
     {
       if(!is.null(nodeName) && nodeName != "")
       {
+        iib_node_query = getSiteIIBNodeQuery(nodeName, showSource)
+        iib_edge_query = getSiteIIBEdgeQuery(nodeName, showSource)
+        
         node_query = paste("
                            MATCH p1=shortestPath(
                            (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
@@ -143,13 +106,14 @@ source("common.R")
                            UNION MATCH p2=shortestPath(
                            (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
                             ) where id(src) <> id(dst)
+                            with p2 as p2, dst as inter_dst1
                            with (nodes(p2)) as p2_nodes
                            unwind p2_nodes AS k
                            with distinct(k) as m
                            RETURN m.name AS id, m.name AS label, m.name as `Site name`, apoc.text.join((m.cat),\", \") AS group, m.olt_customers as olt_customers
                            UNION MATCH (m{name:'",nodeName,"'})
                            RETURN m.name AS id, m.name AS label, m.name as `Site name`, apoc.text.join((m.cat),\", \") AS group, m.olt_customers as olt_customers
-                           ", sep="")
+                           ", iib_node_query, sep="")
         
         edge_query = paste("
                            MATCH p1=shortestPath((src{name:'",nodeName,"'})-[:Link*..30]->(dst))
@@ -164,7 +128,7 @@ source("common.R")
                            unwind rl2 as record
                            with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                            return from,  to,label, group
-                           ", sep = "")
+                           ", iib_edge_query, sep = "")
         
         if(showSource)
         {
@@ -186,7 +150,7 @@ source("common.R")
                              RETURN m.name AS id, m.name AS label, m.name as `Site name`, apoc.text.join((m.cat),\", \") as group, m.olt_customers as olt_customers
                              UNION MATCH (m{name:'",nodeName,"'})
                              RETURN m.name AS id, m.name AS label, m.name as `Site name`, apoc.text.join((m.cat),\", \") as group, m.olt_customers as olt_customers
-                             ", sep="")
+                             ", iib_node_query, sep="")
           
           edge_query = paste("
                              MATCH p1=shortestPath((dst{name:'",nodeName,"'})<-[:Link*..30]-(src))
@@ -201,7 +165,7 @@ source("common.R")
                              unwind rl2 as record
                              with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                              return from,  to,label, group
-                             ", sep = "")
+                             ", iib_edge_query, sep = "")
         }
         
         nodes = cypher(graph, node_query)
@@ -234,7 +198,7 @@ source("common.R")
           visEdges(smooth = FALSE,
                    shadow = FALSE,
                    arrows =list(to = list(enabled = TRUE, scaleFactor = 1)),
-                   color = list(color = "lightblue", highlight = "pink")) %>%
+                   color = list(color = "lightblue", highlight = "blue")) %>%
           visLayout(randomSeed = 12) %>%
           visOptions(nodesIdSelection = list(enabled = TRUE,
                                              selected = nodeName,

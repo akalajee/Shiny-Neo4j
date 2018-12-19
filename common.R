@@ -161,6 +161,195 @@ getNodeClassification = function(detail_node_info, total_node_count, update_db_c
   
 }
 
+getNodeDetailedInfo = function(nodeName)
+{
+  detail_node_info_query = paste("MATCH (n{name:'",nodeName,"'})
+                                       RETURN n
+                                 ", sep="")
+  detail_node_info = cypherToList(graph, detail_node_info_query)
+  return(detail_node_info)
+}
+
+getGraphTotalNodeCount = function(nodeName, showSource)
+{
+  q1_node_query = paste("MATCH p1=shortestPath(
+                         (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
+  ) where id(src) <> id(dst)
+                        with (nodes(p1)) as p1_nodes 
+                        UNWIND p1_nodes as my_nodes 
+                        return DISTINCT(id(my_nodes))", sep="")
+  
+  q2_node_query = paste("MATCH p2=shortestPath(
+                        (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
+  ) where id(src) <> id(dst)
+                         with p2 as p2, dst as inter_dst1
+                            match p5=shortestPath(
+                        (inter_dst1)-[:Link*..30]->(dst3)
+                        ) where id(inter_dst1) <> id(dst3)
+                        with (nodes(p2))+(nodes(p5)) as p2_nodes
+                        UNWIND p2_nodes as my_nodes 
+                        return DISTINCT(id(my_nodes))", sep="")
+  
+  q3_node_query = paste("MATCH p3=(src{name:'",nodeName,"'})-[:IIB_Link]->(dst)
+                         where any (x in dst.cat where x in [\"IIB_SRM\"])
+                         optional match p4=shortestPath(
+                         (dst)-[:Link*..30]->(dst2)
+                         ) where id(dst) <> id(dst2)
+                         WITH collect(nodes(p3))+collect(nodes(p4)) as p3_nodes
+                        unwind p3_nodes AS pre_k
+                        unwind pre_k AS my_nodes
+                         return DISTINCT(id(my_nodes))
+                             ", sep="")
+  
+  if(showSource)
+  {
+    q1_node_query = paste("MATCH p1=shortestPath(
+                          (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
+    ) where id(src) <> id(dst) and src.bsc = true
+                          with (nodes(p1)) as p1_nodes
+                          UNWIND p1_nodes as my_nodes
+                          return DISTINCT(id(my_nodes))", sep="")
+    
+    q2_node_query = paste("MATCH p2=shortestPath(
+                          (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
+    ) where id(src) <> id(dst)
+                          with (nodes(p2)) as p2_nodes
+                          UNWIND p2_nodes as my_nodes
+                          return DISTINCT(id(my_nodes))", sep="")
+    
+    q3_node_query = paste("MATCH p3=(dst{name:'",nodeName,"'})<-[:IIB_Link*..12]-(src)
+                        where any (x in dst.cat where x in [\"IIB_SRM\"])
+                        with (nodes(p3)) as p3_nodes
+                        UNWIND p3_nodes as my_nodes
+                        return DISTINCT(id(my_nodes))
+                        ", sep="")
+  }
+  
+  q1_node = cypher(graph, q1_node_query)
+  q2_node = cypher(graph, q2_node_query)
+  q3_node = cypher(graph, q3_node_query)
+  combined_node = rbind(q1_node,q2_node,q3_node)
+  
+  unique_node = unique(combined_node[[1]])
+  total_node_count = length(unique_node)
+  
+  total_node_count = ifelse(total_node_count >= 1, total_node_count, 1)
+  
+  return (total_node_count)
+}
+
+getSiteIIBEdgeQuery = function(nodeName, showSource)
+{
+  detail_node_info = getNodeDetailedInfo(nodeName)
+  isSiteIIBAGGR = isSiteIIBAGGR(detail_node_info)
+  isSiteIIBPREAGG = isSiteIIBPREAGG(detail_node_info)
+  isSiteIIBSRM = isSiteIIBSRM(detail_node_info)
+  if( (!showSource && (isSiteIIBAGGR || isSiteIIBPREAGG)) || (showSource && isSiteIIBSRM) )
+  {
+    
+  
+    baseQuery = paste("
+    UNION MATCH p3=(src{name:'",nodeName,"'})-[:IIB_Link*..12]->(dst)
+    where any (x in dst.cat where x in [\"IIB_SRM\"])
+    optional match p4=shortestPath(
+                        (dst)-[:Link*..30]->(dst2)
+    ) where id(dst) <> id(dst2)
+    WITH collect(relationships(p3))+collect(relationships(p4)) as p3_relations_winded, dst
+    unwind p3_relations_winded as p3_relations
+    with extract(x IN p3_relations | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }) AS rl2
+    unwind rl2 as record
+    with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
+    return from,  to,label, group
+    ", sep="")
+    
+    if(showSource)
+    {
+      baseQuery = paste("
+      UNION MATCH p3=(dst{name:'",nodeName,"'})<-[:IIB_Link*..12]-(src)
+      where any (x in dst.cat where x in [\"IIB_SRM\"])
+      with extract(x IN relationships(p3) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }) AS rl2
+      unwind rl2 as record
+      with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
+      return from,  to,label, group
+      ", sep="")
+    }
+    
+    return (baseQuery)
+   
+  }
+  return ("")
+}
+
+getSiteIIBNodeQuery = function(nodeName, showSource)
+{
+  detail_node_info = getNodeDetailedInfo(nodeName)
+  isSiteIIBAGGR = isSiteIIBAGGR(detail_node_info)
+  isSiteIIBPREAGG = isSiteIIBPREAGG(detail_node_info)
+  isSiteIIBSRM = isSiteIIBSRM(detail_node_info)
+  if( (!showSource && (isSiteIIBAGGR || isSiteIIBPREAGG)) || (showSource && isSiteIIBSRM) )
+  {
+    baseQuery = paste("
+  UNION MATCH p3 = (src{name:'",nodeName,"'})-[:IIB_Link*..12]->(dst)
+                      where any (x in dst.cat where x in [\"IIB_SRM\"])
+                      optional match p4=shortestPath(
+                        (dst)-[:Link*..30]->(dst2)
+                            ) where id(dst) <> id(dst2)
+                      WITH collect(nodes(p3))+collect(nodes(p4)) as p3_nodes
+                      unwind p3_nodes AS pre_k
+                      unwind pre_k AS k
+                      with distinct(k) as m
+                      RETURN m.name AS id, m.name AS label, m.name as `Site name`, apoc.text.join((m.cat),\", \") AS group, m.olt_customers as olt_customers
+                      ", sep="")
+    
+    if(showSource)
+    {
+      baseQuery = paste("
+                        UNION MATCH p3=(dst{name:'",nodeName,"'})<-[:IIB_Link*..12]-(src)
+                        where any (x in dst.cat where x in [\"IIB_SRM\"])
+                        with (nodes(p3)) as p3_nodes
+                        unwind p3_nodes AS k
+                        with distinct(k) as m
+                        RETURN m.name AS id, m.name AS label, m.name as `Site name`, apoc.text.join((m.cat),\", \") AS group, m.olt_customers as olt_customers
+                        ", sep="")
+    }
+    
+    return (baseQuery)
+  }
+  
+  return ("")
+  
+}
+
+isSiteIIB = function(detail_node_info)
+{
+  node_category = detail_node_info[[1]][[1]][["cat"]]
+  isIIB_AGGR = ("IIB_AGGR" %in% node_category)
+  isIIB_PREAGG = ("IIB_PREAGG" %in% node_category)
+  isIIB_SRM = ("IIB_SRM" %in% node_category)
+  return (isIIB_AGGR || isIIB_PREAGG || isIIB_SRM)
+}
+
+isSiteIIBAGGR = function(detail_node_info)
+{
+  node_category = detail_node_info[[1]][[1]][["cat"]]
+  isIIB_AGGR = ("IIB_AGGR" %in% node_category)
+  return (isIIB_AGGR)
+}
+
+isSiteIIBPREAGG = function(detail_node_info)
+{
+  node_category = detail_node_info[[1]][[1]][["cat"]]
+  isIIB_PREAGG = ("IIB_PREAGG" %in% node_category)
+  return (isIIB_PREAGG)
+}
+
+isSiteIIBSRM = function(detail_node_info)
+{
+  node_category = detail_node_info[[1]][[1]][["cat"]]
+  isIIB_SRM = ("IIB_SRM" %in% node_category)
+  return (isIIB_SRM)
+}
+
 updateNodeClassification = function(nodeName, classification)
 {
   query = "MATCH (n{name: {nodeName} })
@@ -201,27 +390,8 @@ classifyAllDBNodes = function()
     nodeName = all_node_names_list[[i]][[1]]
     if(!is.null(nodeName) && nodeName != "")
     {
-      q1_node_query = paste("MATCH p1=shortestPath(
-                         (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
-                          ) where id(src) <> id(dst)
-                         with (nodes(p1)) as p1_nodes 
-                         UNWIND p1_nodes as my_nodes 
-                         return DISTINCT(id(my_nodes))", sep="")
       
-      q2_node_query = paste("MATCH p2=shortestPath(
-                         (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
-                          ) where id(src) <> id(dst)
-                         with (nodes(p2)) as p2_nodes 
-                         UNWIND p2_nodes as my_nodes 
-                         return DISTINCT(id(my_nodes))", sep="")
-      
-      q1_node = cypher(graph, q1_node_query)
-      q2_node = cypher(graph, q2_node_query)
-      combined_node = rbind(q1_node,q2_node)
-      unique_node = unique(combined_node[[1]])
-      total_node_count = length(unique_node)
-      
-      total_node_count = ifelse(total_node_count >= 1, total_node_count, 1)
+      total_node_count = getGraphTotalNodeCount(nodeName, showSource = FALSE)
       
       detail_node_info_query = paste("MATCH (n{name:'",nodeName,"'})
                                        RETURN n
