@@ -190,7 +190,7 @@ getGraphTotalNodeCount = function(nodeName, showSource)
                         UNWIND p2_nodes as my_nodes 
                         return DISTINCT(id(my_nodes))", sep="")
   
-  q3_node_query = paste("MATCH p3=(src{name:'",nodeName,"'})-[:IIB_Link]->(dst)
+  q3_node_query = paste("MATCH p3=(src{name:'",nodeName,"'})-[:IIB_Link*..12]->(dst)
                          where any (x in dst.cat where x in [\"IIB_SRM\"])
                          optional match p4=shortestPath(
                          (dst)-[:Link*..30]->(dst2)
