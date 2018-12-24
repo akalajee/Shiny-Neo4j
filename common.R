@@ -182,11 +182,7 @@ getGraphTotalNodeCount = function(nodeName, showSource)
   q2_node_query = paste("MATCH p2=shortestPath(
                         (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
   ) where id(src) <> id(dst)
-                         with p2 as p2, dst as inter_dst1
-                            match p5=shortestPath(
-                        (inter_dst1)-[:Link*..30]->(dst3)
-                        ) where id(inter_dst1) <> id(dst3)
-                        with (nodes(p2))+(nodes(p5)) as p2_nodes
+                        with (nodes(p2)) as p2_nodes
                         UNWIND p2_nodes as my_nodes 
                         return DISTINCT(id(my_nodes))", sep="")
   

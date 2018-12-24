@@ -168,6 +168,7 @@ source("common.R")
                              ", iib_edge_query, sep = "")
         }
         
+
         nodes = cypher(graph, node_query)
         edges = cypher(graph, edge_query)
         
