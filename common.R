@@ -173,23 +173,23 @@ getNodeDetailedInfo = function(nodeName)
 getGraphTotalNodeCount = function(nodeName, showSource)
 {
   q1_node_query = paste("MATCH p1=shortestPath(
-                         (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
+                         (src{name:'",nodeName,"'})-[:MW*..30]->(dst)
   ) where id(src) <> id(dst)
                         with (nodes(p1)) as p1_nodes 
                         UNWIND p1_nodes as my_nodes 
                         return DISTINCT(id(my_nodes))", sep="")
   
   q2_node_query = paste("MATCH p2=shortestPath(
-                        (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
+                        (src{name:'",nodeName,"'})-[:OSN*..10]-(dst)
   ) where id(src) <> id(dst)
                         with (nodes(p2)) as p2_nodes
                         UNWIND p2_nodes as my_nodes 
                         return DISTINCT(id(my_nodes))", sep="")
   
-  q3_node_query = paste("MATCH p3=(src{name:'",nodeName,"'})-[:IIB_Link*..12]->(dst)
+  q3_node_query = paste("MATCH p3=(src{name:'",nodeName,"'})-[:IIB*..12]->(dst)
                          where any (x in dst.cat where x in [\"IIB_SRM\"])
                          optional match p4=shortestPath(
-                         (dst)-[:Link*..30]->(dst2)
+                         (dst)-[:MW*..30]->(dst2)
                          ) where id(dst) <> id(dst2)
                          WITH collect(nodes(p3))+collect(nodes(p4)) as p3_nodes
                         unwind p3_nodes AS pre_k
@@ -200,20 +200,20 @@ getGraphTotalNodeCount = function(nodeName, showSource)
   if(showSource)
   {
     q1_node_query = paste("MATCH p1=shortestPath(
-                          (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
-    ) where id(src) <> id(dst) and src.bsc = true
+                          (dst{name:'",nodeName,"'})<-[:MW*..30]-(src)
+    ) where id(src) <> id(dst) and src.mw_bsc = true
                           with (nodes(p1)) as p1_nodes
                           UNWIND p1_nodes as my_nodes
                           return DISTINCT(id(my_nodes))", sep="")
     
     q2_node_query = paste("MATCH p2=shortestPath(
-                          (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
+                          (src{name:'",nodeName,"'})-[:OSN*..10]-(dst)
     ) where id(src) <> id(dst)
                           with (nodes(p2)) as p2_nodes
                           UNWIND p2_nodes as my_nodes
                           return DISTINCT(id(my_nodes))", sep="")
     
-    q3_node_query = paste("MATCH p3=(dst{name:'",nodeName,"'})<-[:IIB_Link*..12]-(src)
+    q3_node_query = paste("MATCH p3=(dst{name:'",nodeName,"'})<-[:IIB*..12]-(src)
                         where any (x in dst.cat where x in [\"IIB_SRM\"])
                         with (nodes(p3)) as p3_nodes
                         UNWIND p3_nodes as my_nodes
@@ -245,10 +245,10 @@ getSiteIIBEdgeQuery = function(nodeName, showSource)
     
   
     baseQuery = paste("
-    UNION MATCH p3=(src{name:'",nodeName,"'})-[:IIB_Link*..12]->(dst)
+    UNION MATCH p3=(src{name:'",nodeName,"'})-[:IIB*..12]->(dst)
     where any (x in dst.cat where x in [\"IIB_SRM\"])
     optional match p4=shortestPath(
-                        (dst)-[:Link*..30]->(dst2)
+                        (dst)-[:MW*..30]->(dst2)
     ) where id(dst) <> id(dst2)
     WITH collect(relationships(p3))+collect(relationships(p4)) as p3_relations_winded, dst
     unwind p3_relations_winded as p3_relations
@@ -261,7 +261,7 @@ getSiteIIBEdgeQuery = function(nodeName, showSource)
     if(showSource)
     {
       baseQuery = paste("
-      UNION MATCH p3=(dst{name:'",nodeName,"'})<-[:IIB_Link*..12]-(src)
+      UNION MATCH p3=(dst{name:'",nodeName,"'})<-[:IIB*..12]-(src)
       where any (x in dst.cat where x in [\"IIB_SRM\"])
       with extract(x IN relationships(p3) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }) AS rl2
       unwind rl2 as record
@@ -285,10 +285,10 @@ getSiteIIBNodeQuery = function(nodeName, showSource)
   if( (!showSource && (isSiteIIBAGGR || isSiteIIBPREAGG)) || (showSource && isSiteIIBSRM) )
   {
     baseQuery = paste("
-  UNION MATCH p3 = (src{name:'",nodeName,"'})-[:IIB_Link*..12]->(dst)
+  UNION MATCH p3 = (src{name:'",nodeName,"'})-[:IIB*..12]->(dst)
                       where any (x in dst.cat where x in [\"IIB_SRM\"])
                       optional match p4=shortestPath(
-                        (dst)-[:Link*..30]->(dst2)
+                        (dst)-[:MW*..30]->(dst2)
                             ) where id(dst) <> id(dst2)
                       WITH collect(nodes(p3))+collect(nodes(p4)) as p3_nodes
                       unwind p3_nodes AS pre_k
@@ -300,7 +300,7 @@ getSiteIIBNodeQuery = function(nodeName, showSource)
     if(showSource)
     {
       baseQuery = paste("
-                        UNION MATCH p3=(dst{name:'",nodeName,"'})<-[:IIB_Link*..12]-(src)
+                        UNION MATCH p3=(dst{name:'",nodeName,"'})<-[:IIB*..12]-(src)
                         where any (x in dst.cat where x in [\"IIB_SRM\"])
                         with (nodes(p3)) as p3_nodes
                         unwind p3_nodes AS k
@@ -356,11 +356,15 @@ updateNodeClassification = function(nodeName, classification)
   node = updateProp(node, classification = classification)
 }
 
-classifyAllDBNodes = function()
+classifyAllDBNodes = function(updateProgressParam=TRUE)
 {
-  progress <- shiny::Progress$new()
-  on.exit(progress$close())
-  progress$set(message = "Classifying sites", value = 0)
+  if(isTRUE(updateProgressParam))
+  {
+    progress <- shiny::Progress$new()
+    on.exit(progress$close())
+    progress$set(message = "Classifying sites", value = 0)
+  }
+  
   all_node_query = paste("MATCH (n)
                            RETURN n.name AS sitename
                          order by n.name asc
@@ -378,9 +382,12 @@ classifyAllDBNodes = function()
   i = 1
   while (i<=length(all_node_names_list)){
 
-    # If we were passed a progress update function, call it
-    if (is.function(updateProgress)) {
-      updateProgress(progress, i, all_nodes_count)
+    if(isTRUE(updateProgressParam))
+    {
+      # If we were passed a progress update function, call it
+      if (is.function(updateProgress)) {
+        updateProgress(progress, i, all_nodes_count)
+      }
     }
     
     nodeName = all_node_names_list[[i]][[1]]
@@ -413,7 +420,7 @@ classifyAllDBNodes = function()
   }
   
   commit(tx)
-  
+  return (i);
 }
 
 checkIfDBNodesClassified = function()

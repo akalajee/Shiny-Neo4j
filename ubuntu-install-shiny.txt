@@ -19,6 +19,8 @@ sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/mime.tar.gz', 
 sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/sourcetools.tar.gz', repos=NULL, type='source')\"" -- success
 sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/xtable.tar.gz', repos=NULL, type='source')\"" -- success
 
+sudo su - -c "R -e \"install.packages('/root/R-packages/shiny-dep/plumber.tar.gz', repos=NULL, type='source')\""
+
 
 shiny:
 ======

@@ -1,0 +1,12 @@
+[Unit]
+Description=Plumber API
+# After=postgresql
+# (or mariadb, mysql, etc if you use a DB with Plumber, otherwise leave this commented)
+
+[Service]
+ExecStart=/usr/bin/Rscript -e "api <- plumber::plumb('/srv/shiny-server/neo4j/API.R'); api$run(port=8081, host='0.0.0.0')"
+Restart=on-abnormal
+WorkingDirectory=/srv/shiny-server/neo4j
+
+[Install]
+WantedBy=multi-user.target

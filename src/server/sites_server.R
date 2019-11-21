@@ -97,14 +97,14 @@ source("common.R")
         
         node_query = paste("
                            MATCH p1=shortestPath(
-                           (src{name:'",nodeName,"'})-[:Link*..30]->(dst)
+                           (src{name:'",nodeName,"'})-[:MW*..30]->(dst)
                            ) where id(src) <> id(dst)
                            with (nodes(p1)) as p1_nodes
                            unwind p1_nodes AS k
                            with distinct(k) as m
                            RETURN m.name AS id, m.name AS label, m.name as `Site name`, apoc.text.join((m.cat),\", \") AS group, m.olt_customers as olt_customers
                            UNION MATCH p2=shortestPath(
-                           (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
+                           (src{name:'",nodeName,"'})-[:OSN*..10]-(dst)
                             ) where id(src) <> id(dst)
                             with p2 as p2, dst as inter_dst1
                            with (nodes(p2)) as p2_nodes
@@ -116,13 +116,13 @@ source("common.R")
                            ", iib_node_query, sep="")
         
         edge_query = paste("
-                           MATCH p1=shortestPath((src{name:'",nodeName,"'})-[:Link*..30]->(dst))
+                           MATCH p1=shortestPath((src{name:'",nodeName,"'})-[:MW*..30]->(dst))
                            where id(src) <> id(dst)
                            with extract(x IN relationships(p1) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }) AS rl1
                            unwind rl1 as record
                            with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                            return from,  to,label, group
-                           UNION MATCH p2=shortestPath( (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst) ) 
+                           UNION MATCH p2=shortestPath( (src{name:'",nodeName,"'})-[:OSN*..10]-(dst) ) 
                            where id(src) <> id(dst)
                            with extract(x IN relationships(p2) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }) AS rl2
                            unwind rl2 as record
@@ -135,14 +135,14 @@ source("common.R")
           
           node_query = paste("
                              MATCH p1=shortestPath(
-                             (dst{name:'",nodeName,"'})<-[:Link*..30]-(src)
-                             ) where id(src) <> id(dst) and src.bsc = true
+                             (dst{name:'",nodeName,"'})<-[:MW*..30]-(src)
+                             ) where id(src) <> id(dst) and src.mw_bsc = true
                              with (nodes(p1)) as p1_nodes
                              unwind p1_nodes AS k
                              with distinct(k) as m
                              RETURN m.name AS id, m.name AS label, m.name as `Site name`, apoc.text.join((m.cat),\", \") AS group, m.olt_customers as olt_customers
                              UNION MATCH p2=shortestPath(
-                             (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst)
+                             (src{name:'",nodeName,"'})-[:OSN*..10]-(dst)
                               ) where id(src) <> id(dst)
                              with (nodes(p2)) as p2_nodes
                              unwind p2_nodes AS k
@@ -153,13 +153,13 @@ source("common.R")
                              ", iib_node_query, sep="")
           
           edge_query = paste("
-                             MATCH p1=shortestPath((dst{name:'",nodeName,"'})<-[:Link*..30]-(src))
-                             where id(src) <> id(dst) and src.bsc = true
+                             MATCH p1=shortestPath((dst{name:'",nodeName,"'})<-[:MW*..30]-(src))
+                             where id(src) <> id(dst) and src.mw_bsc = true
                              with extract(x IN relationships(p1) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }) AS rl1
                              unwind rl1 as record
                              with distinct record.link_id as link_id, record.start as from, record.end AS to, record.type AS label, record.group as group
                              return from,  to,label, group
-                             UNION MATCH p2=shortestPath( (src{name:'",nodeName,"'})-[:OSN_Link*..10]-(dst) ) 
+                             UNION MATCH p2=shortestPath( (src{name:'",nodeName,"'})-[:OSN*..10]-(dst) ) 
                              where id(src) <> id(dst)
                              with extract(x IN relationships(p2) | {link_id: id(x), start: startNode(x).name, end: endNode(x).name, type: type(x), group: apoc.text.join((dst.cat),\", \") }) AS rl2
                              unwind rl2 as record

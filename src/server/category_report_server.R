@@ -30,7 +30,7 @@ output$siteCategoryOutputUI <- renderUI({
   {
     if(!is.null(category) && category != "")
     {
-      total_classified_node_count_query = paste("MATCH (n:Site)
+      total_classified_node_count_query = paste("MATCH (n:SITE)
                                          where any(x IN n.cat WHERE x = \"",category,"\")
                                          RETURN count(n)
                                          ", sep="")
@@ -38,7 +38,7 @@ output$siteCategoryOutputUI <- renderUI({
       total_node_count = cypher(graph, total_classified_node_count_query)[1,1]
       total_node_count = ifelse(total_node_count >= 1, total_node_count, 1)
       
-      total_classified_node_query = paste("MATCH (m:Site)
+      total_classified_node_query = paste("MATCH (m:SITE)
                                            where any(x IN m.cat WHERE x = \"",category,"\")
                                            RETURN m.name as `Site name`, apoc.text.join((m.cat),\", \") as group, m.olt_customers as olt_customers
                                           ", sep="")
